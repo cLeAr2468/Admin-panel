@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-
+import { Link } from 'react-router-dom';
 const Home = () => {
     return (
         <div className="min-h-screen bg-cover bg-center"
@@ -20,9 +20,11 @@ const Home = () => {
                         <p className="text-xl text-gray-700 mb-8">
                             Professional Laundry & Dry Cleaning Services
                         </p>
+                        <Link to="/dashboard">
                         <Button className="bg-[#126280] text-white px-8 py-6 text-lg hover:bg-[#126280]/90">
-                            Book Now
+                            Go to Dashboard
                         </Button>
+                        </Link>
                     </div>
 
                     {/* Services Section */}
