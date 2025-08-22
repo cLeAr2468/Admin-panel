@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '../ui/button.jsx';
 import { Menu, X } from 'lucide-react';
-import { Link } from 'react-router-dom'; // Add this import
+import { Link } from 'react-router-dom';
+import { Card, CardContent } from '../ui/card';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +26,7 @@ const Header = () => {
             <Button
               variant="outline"
               size="sm"
-              className="text-black border-[#126280] hover:bg-white hover:text-[#126280]"
+              className="text-white border-[#126280] bg-[#126280] hover:bg-white hover:text-slate-900 font-bold"
             >
               LOGIN
             </Button>
@@ -33,30 +34,37 @@ const Header = () => {
         </nav>
 
         <div className="md:hidden">
-          <button onClick={() => setIsOpen(!isOpen)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-white hover:bg-slate-800"
+          >
             {isOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
+          </Button>
         </div>
       </div>
 
       {isOpen && (
-        <div className="md:hidden mt-4 px-4 bg-[#126280]">
-          <ul className="flex flex-col gap-4 font-semibold mb-4">
-            <li><Link to="/" className="hover:underline">HOME</Link></li>
-            <li><Link to="/about" className="hover:underline">ABOUT</Link></li>
-            <li><Link to="/services" className="hover:underline">SERVICES</Link></li>
-            <li><Link to="/prices" className="hover:underline">PRICES</Link></li>
-          </ul>
-          <Link to="/login" className="w-full">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-black hover:bg-white hover:text-[#126280]"
-            >
-              LOGIN
-            </Button>
-          </Link>
-        </div>
+        <Card className="md:hidden mt-4 mx-4 bg-slate-800 border-0">
+          <CardContent className="p-4">
+            <ul className="flex flex-col gap-4 font-semibold mb-4">
+              <li><Link to="/" className="hover:underline">HOME</Link></li>
+              <li><Link to="/about" className="hover:underline">ABOUT</Link></li>
+              <li><Link to="/services" className="hover:underline">SERVICES</Link></li>
+              <li><Link to="/prices" className="hover:underline">PRICES</Link></li>
+            </ul>
+            <Link to="/login" className="w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-white border-white hover:bg-white hover:text-slate-900"
+              >
+                LOGIN
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       )}
     </header>
   );

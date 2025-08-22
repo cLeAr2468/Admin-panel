@@ -7,6 +7,8 @@ import Services from './components/layout/services';
 import Prices from './components/layout/prices';
 import Register from './components/layout/register';
 import Login from './components/layout/Login';
+import Dashboard from './components/layout/Dashboard';
+import Customer from './components/layout/Customer';
 function AppContent() {
   const location = useLocation();
 
@@ -14,7 +16,8 @@ function AppContent() {
   const hideHeaderRoutes = [
     '/register',
     '/login',
-
+    '/dashboard',
+    '/customer',
   ];
 
   // Check if current path should hide header
@@ -33,6 +36,8 @@ function AppContent() {
         
         {/* Protected Routes */}
         <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/customer" element={<Customer />} />
 
       </Routes>
     </div>

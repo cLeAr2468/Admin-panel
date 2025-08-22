@@ -5,43 +5,23 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+    const [username, setUsername] = useState("admin");
+    const [password, setPassword] = useState("password");
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
-    e.preventDefault();
-    setError(""); 
+    const handleLogin = (e) => {
+        e.preventDefault();
+        setError("");
 
-    try {
-        const response = await fetch('http://localhost:3000/api/public/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            credentials: 'include',
-            mode: 'cors',
-            body: JSON.stringify({ 
-                email: username, 
-                password 
-            })
-        });
-
-        const data = await response.json();
-        console.log('Login response:', data);
-
-        if (response.ok) {
+        // Simple hardcoded authentication
+        if (username === "admin" && password === "password") {
+            // Navigate to dashboard on successful login
             navigate("/dashboard");
         } else {
-            setError(data.message || "Login failed. Please try again.");
+            setError("Invalid username or password. Use admin/password");
         }
-    } catch (error) {
-        console.error("Login error:", error);
-        setError("Connection error. Please check if the server is running.");
-    }
-};
+    };
 
     return (
         <div className="min-h-screen bg-cover bg-center"
