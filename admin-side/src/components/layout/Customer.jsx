@@ -71,7 +71,7 @@ const Customer = () => {
         <div className="relative z-10 flex justify-center items-center min-h-[60vh]">
           <div className="flex gap-8">
             {/* Primary Content Block - Left */}
-            <Card className="bg-slate-900 text-white shadow-xl border-0 w-80">
+            <Card className="bg-[#688ce4] text-white shadow-xl border-0 w-80">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold text-center text-white">
                   Customer Management
@@ -108,7 +108,7 @@ const Customer = () => {
             </Card>
 
             {/* Secondary Content Block - Right */}
-            <Card className="bg-slate-900 text-white shadow-xl border-0 w-80">
+            <Card className="bg-[#688ce4] text-white shadow-xl border-0 w-80">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold text-center text-white">
                   Registration Options

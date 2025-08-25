@@ -2,10 +2,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import LaundryStatusChart from './LaundryStatusChart';
 import Sidebar from './Sidebar';
+import { Input } from '../ui/input';
 
 const Dashboard = () => {
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen">
       <Sidebar />
 
       {/* Main Content */}
@@ -22,93 +23,77 @@ const Dashboard = () => {
           {/* Top Statistics Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Today's Highlight */}
-            <Card className="bg-white shadow-lg border-0">
+            <Card className="bg-[#688ce4] shadow-lg border-0">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold text-slate-800">
+                <CardTitle className="text-lg font-semibold text-white">
                   TODAY'S HIGHLIGHT
                 </CardTitle>
-                <p className="text-sm text-slate-600">APRIL 7, 2025</p>
+                <Input type="date" className="max-w-[180px] bg-white border-slate-300 text-slate-800" />
               </CardHeader>
               <CardContent>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-blue-600 mb-4">45</div>
-                  <div className="text-lg font-medium text-slate-700 mb-4">ORDERS</div>
-                  <div className="bg-slate-800 text-white p-3 rounded-lg">
-                    <div className="text-xs mb-2 text-slate-300">MM DAY YY</div>
-                    <div className="flex justify-between text-sm">
-                      <span className="cursor-pointer hover:text-blue-300 transition-colors">Weekly</span>
-                      <span className="cursor-pointer hover:text-blue-300 transition-colors">Monthly</span>
-                      <span className="cursor-pointer hover:text-blue-300 transition-colors">Yearly</span>
-                    </div>
+                <div className="flex justify-between items-center">
+                  {/* First Pair */}
+                  <div className="flex items-center gap-2 flex-col">
+                    <span className="text-lg font-semibold text-white">ORDERS:</span>
+                    <span className="text-2xl font-bold text-white">45</span>
+                  </div>
+
+                  {/* Second Pair */}
+                  <div className="flex items-center gap-2 flex-col">
+                    <span className="text-lg font-semibold text-white">ORDER AMOUNT:</span>
+                    <span className="text-2xl font-bold text-white">₱4,080</span>
                   </div>
                 </div>
               </CardContent>
+
             </Card>
 
             {/* Store Inventory */}
-            <Card className="bg-white shadow-lg border-0">
+            <Card className="bg-[#688ce4] shadow-lg border-0">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold text-slate-800">
+                <CardTitle className="text-lg font-semibold text-white">
                   STORE INVENTORY
                 </CardTitle>
-                <p className="text-sm text-slate-600">APRIL 7, 2025</p>
+                <Input type="date" className="max-w-[180px] bg-white border-slate-300 text-slate-800" />
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">ORDER AMOUNT:</span>
-                    <span className="font-semibold text-slate-800">₱4,080</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">GARMENT:</span>
-                    <span className="font-semibold text-slate-800">45</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">ORDER:</span>
-                    <span className="font-semibold text-slate-800">45</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">PROCESS:</span>
-                    <span className="font-semibold text-slate-800">2,000</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">VOICE:</span>
-                    <span className="font-semibold text-slate-800">645</span>
-                  </div>
-                  <div className="bg-slate-800 text-white p-3 rounded-lg mt-4">
-                    <div className="text-xs mb-2 text-slate-300">MM DAY YY</div>
-                    <div className="flex justify-between text-sm">
-                      <span className="cursor-pointer hover:text-blue-300 transition-colors">Weekly</span>
-                      <span className="cursor-pointer hover:text-blue-300 transition-colors">Monthly</span>
-                      <span className="cursor-pointer hover:text-blue-300 transition-colors">Yearly</span>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-3 gap-x-6 px-2">
+                  {/* Header row */}
+                  <div />
+                  <div className="text-sm font-semibold text-white tracking-wide">PROCESS</div>
+                  <div className="text-sm font-semibold text-white tracking-wide">VOICE</div>
+
+                  {/* GARMENT row */}
+                  <div className="text-white">GARMENT</div>
+                  <div className="text-white font-semibold">45</div>
+                  <div className="text-white font-semibold">2,000</div>
+
+                  {/* ORDER row */}
+                  <div className="text-white">ORDER</div>
+                  <div className="text-white font-semibold">45</div>
+                  <div className="text-white font-semibold">645</div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Others Statistic */}
-            <Card className="bg-white shadow-lg border-0">
+            <Card className="bg-[#688ce4] shadow-lg border-0">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold text-slate-800">
+                <CardTitle className="text-lg font-semibold text-white">
                   OTHERS STATISTIC
                 </CardTitle>
-                <p className="text-sm text-slate-600">APRIL 7, 2025</p>
+                <Input type="date" className="max-w-[180px] bg-white border-slate-300 text-slate-800" />
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">15</div>
-                    <div className="text-sm text-slate-600">LAUNDRY</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">10</div>
-                    <div className="text-sm text-slate-600">READY</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">5</div>
-                    <div className="text-sm text-slate-600">PROCESS</div>
-                  </div>
+                <div className="grid grid-cols-3 text-center gap-y-2">
+                  {/* Header row */}
+                  <div className="text-sm font-semibold text-white tracking-wide">LAUNDRY</div>
+                  <div className="text-sm font-semibold text-white tracking-wide">READY</div>
+                  <div className="text-sm font-semibold text-white tracking-wide">PROCESS</div>
+                  {/* Values row */}
+                  <div className="text-2xl font-bold text-white">15</div>
+                  <div className="text-2xl font-bold text-white">10</div>
+                  <div className="text-2xl font-bold text-white">5</div>
                 </div>
               </CardContent>
             </Card>

@@ -28,10 +28,10 @@ const Sidebar = () => {
   };
 
   return (
-    <Card className="w-64 h-screen rounded-none border-r-0 bg-[#126280] text-white shadow-lg">
+    <Card className="w-64 h-screen rounded-none border-r-0 bg-[#688ce4] text-white font-bold shadow-lg">
       <CardContent className="p-4 h-full">
         
-        <h2 className="text-lg font-semibold mb-6 text-white">MENU</h2>
+        <h2 className="text-lg font-bold mb-6 text-white">MENU</h2>
         
         <nav className="space-y-2">
           {menuItems.map((item) => {
@@ -43,7 +43,7 @@ const Sidebar = () => {
                 variant={isActive ? "secondary" : "ghost"}
                 className={`w-full justify-start text-left h-12 ${
                   isActive 
-                    ? 'bg-slate-800 text-white hover:bg-slate-600 border-0' 
+                    ? 'bg-slate-800 text-white font-bold hover:bg-slate-600 border-0' 
                     : 'text-slate-300 hover:bg-slate-900 hover:text-white border-0'
                 }`}
                 onClick={() => handleNavigation(item.path)}
