@@ -35,7 +35,7 @@ const CustomerRegistration = ({ onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-2xl mx-4 bg-white shadow-2xl">
+      <Card className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-2xl font-bold text-slate-800">
             Customer Registration

@@ -232,7 +232,7 @@ const CustomerReceipt = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-6xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-6xl bg-[#cdebf3] shadow-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-2xl font-bold text-slate-800">
             CUSTOMER RECEIPT
@@ -245,14 +245,14 @@ const CustomerReceipt = ({ onClose }) => {
               variant="outline"
               size="icon"
               onClick={onClose}
-              className="h-8 w-8"
+              className="h-8 w-8 bg-[#cdebf3]"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="p-6">
+        <CardContent className="p-6 bg-[#cdebf3]">
           {/* Search Bar */}
           <div className="mb-6">
             <div className="relative">
@@ -275,7 +275,7 @@ const CustomerReceipt = ({ onClose }) => {
               value={formData.cusId}
               onChange={handleInputChange}
               placeholder="Enter Customer ID"
-              className="bg-white border-slate-600 text-slate-900"
+              className="bg-white text-slate-900"
             />
           </div>
 

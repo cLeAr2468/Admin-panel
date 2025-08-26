@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Menu, BarChart3, Users, Package, FileText, Shield, LogOut } from 'lucide-react';
+import { ArrowLeft, Menu, BarChart3, Users, Package, FileText, CreditCard, LogOut } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 
@@ -13,7 +13,7 @@ const Sidebar = () => {
     { name: 'CUSTOMER', icon: Users, path: '/customer' },
     { name: 'INVENTORY', icon: Package, path: '/inventory' },
     { name: 'REPORTS', icon: FileText, path: '/reports' },
-    { name: 'ADMIN', icon: Shield, path: '/admin' },
+    { name: 'PAYMENT METHOD', icon: CreditCard, path: '/payment' },
     { name: 'LOG OUT', icon: LogOut, path: '/logout' },
   ];
 
@@ -28,7 +28,7 @@ const Sidebar = () => {
   };
 
   return (
-    <Card className="w-64 h-screen rounded-none border-r-0 bg-[#688ce4] text-white font-bold shadow-lg">
+    <Card className="w-64 h-screen rounded-none border-r-0 bg-[#688ce4] text-white font-bold shadow-lg print:hidden">
       <CardContent className="p-4 h-full">
         
         <h2 className="text-lg font-bold mb-6 text-white">MENU</h2>

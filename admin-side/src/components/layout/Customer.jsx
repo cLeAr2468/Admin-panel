@@ -43,11 +43,11 @@ const Customer = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-transparent">
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto bg-slate-50 relative">
+      <div className="flex-1 p-6 overflow-auto bg-transparent relative">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
@@ -58,7 +58,7 @@ const Customer = () => {
 
         {/* Top Date Display */}
         <div className="relative z-10 flex justify-end mb-8">
-          <Card className="bg-white shadow-sm border-0">
+          <Card className="bg-transparent shadow-sm border-0">
             <CardContent className="p-3">
               <div className="text-lg font-semibold text-slate-700">
                 Date: April 4, 2025

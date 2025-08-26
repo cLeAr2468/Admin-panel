@@ -6,11 +6,11 @@ import { Input } from '../ui/input';
 
 const Dashboard = () => {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-transparent">
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto bg-slate-50 relative">
+      <div className="flex-1 p-6 overflow-auto bg-transparent relative">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{

@@ -9,6 +9,8 @@ import Register from './components/layout/register';
 import Login from './components/layout/Login';
 import Dashboard from './components/layout/Dashboard';
 import Customer from './components/layout/Customer';
+import Inventory from './components/layout/Inventory';
+import Reports from './components/layout/Reports';
 function AppContent() {
   const location = useLocation();
 
@@ -18,28 +20,34 @@ function AppContent() {
     '/login',
     '/dashboard',
     '/customer',
+    '/inventory',
+    '/reports',
   ];
 
   // Check if current path should hide header
   const shouldHideHeader = hideHeaderRoutes.includes(location.pathname);
 
   return (
-    <div className="min-h-screen">
-      {!shouldHideHeader && <Header />}
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/prices" element={<Prices />} />
-        <Route path="/login" element={<Login />} />
-        
-        {/* Protected Routes */}
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/customer" element={<Customer />} />
+    <div className="min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('/laundry-logo.jpg')" }}>
+      <div className='bg-[#A4DCF4] bg-opacity-80 min-h-screen'>
+        {!shouldHideHeader && <Header />}
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/prices" element={<Prices />} />
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected Routes */}
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/customer" element={<Customer />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/reports" element={<Reports />} />
 
-      </Routes>
+        </Routes>
+      </div>
     </div>
   );
 }
