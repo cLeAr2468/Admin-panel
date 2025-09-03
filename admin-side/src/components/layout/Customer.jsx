@@ -9,12 +9,14 @@ import Sidebar from './Sidebar';
 const Customer = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [registrationType, setRegistrationType] = useState('');
 
   const handleCustomerAction = (action) => {
     console.log(`${action} clicked`);
     // Handle different customer actions
     switch (action) {
       case 'registration':
+        setRegistrationType('ADMIN'); // Default to ADMIN for the main registration button
         setShowRegistration(true);
         break;
       case 'receipt':
@@ -25,9 +27,11 @@ const Customer = () => {
         alert('View Customer Records functionality coming soon!');
         break;
       case 'admin-register':
+        setRegistrationType('ADMIN');
         setShowRegistration(true);
         break;
       case 'customer-register':
+        setRegistrationType('CUSTOMER');
         setShowRegistration(true);
         break;
       default:
@@ -141,8 +145,12 @@ const Customer = () => {
       {/* Customer Registration Modal */}
       {showRegistration && (
         <CustomerRegistration
-          onClose={() => setShowRegistration(false)}
+          onClose={() => {
+            setShowRegistration(false);
+            setRegistrationType(''); // Reset registration type when closing
+          }}
           onSave={handleSaveCustomer}
+          registeredBy={registrationType} // Pass the registration type as a prop
         />
       )}
 
