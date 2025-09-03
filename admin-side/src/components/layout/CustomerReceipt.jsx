@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from "react";
 import { X, Search, Calculator, Printer, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
@@ -6,10 +7,21 @@ import { Input } from "../ui/input";
 import image from "../../../public/laundry-logo.jpg";
 import debounce from "lodash/debounce";
 import { format } from "date-fns";
+=======
+import React, { useState, useEffect } from 'react';
+import { X, Search, Calculator, Printer, ChevronDown } from 'lucide-react';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Input } from '../ui/input';
+import image from '../../../public/laundry-logo.jpg';
+import { toast } from 'react-hot-toast';
+>>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
 
 const CustomerReceipt = ({ onClose }) => {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+   const [laundryId, setLaundryId] = useState(null);
   const [formData, setFormData] = useState({
+<<<<<<< HEAD
     cusId: "",
     name: "",
     phone: "",
@@ -24,6 +36,22 @@ const CustomerReceipt = ({ onClose }) => {
     pillowCase: "",
     bedSheets: "",
     kl: "",
+=======
+    cus_id: '',
+    name: '',
+    cus_phoneNum: '',
+    cus_address: '',
+    batch: '',
+    laundryId: '',
+    shirts: '',
+    pants: '',
+    jeans: '',
+    shorts: '',
+    towel: '',
+    pillowCase: '',
+    bedSheets: '',
+    kl: '',
+>>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
     washing: true,
     totalAmount: "0.00",
     itemCount: "0",
@@ -35,11 +63,97 @@ const CustomerReceipt = ({ onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleInputChange = (e) => {
+  const fetchCustomerData = async (customerId) => {
+    try {
+      if (!customerId || customerId.trim() === '') {
+        return null;
+      }
+
+      const response = await fetch(`http://localhost:3000/api/customers/${customerId}`);
+      
+      if (response.status === 404) {
+        toast.error('Customer not found');
+        return null;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Check if the response has the expected structure
+      if (!result.success || !result.data) {
+        toast.error('Invalid response format');
+        return null;
+      }
+
+      // Access the nested data object
+      const customerData = result.data;
+      
+      // Validate that the required fields exist
+      if (!customerData.cus_fName || !customerData.cus_lName) {
+        toast.error('Invalid customer data received');
+        return null;
+      }
+
+      return customerData;
+    } catch (error) {
+      console.error('Error fetching customer:', error);
+      toast.error('Failed to fetch customer data');
+      return null;
+    }
+  };
+
+  const handleInputChange = async (e) => {
     const { name, value, type, checked } = e.target;
+<<<<<<< HEAD
 
     if (type === "checkbox") {
       setFormData((prev) => ({
+=======
+    
+    // Update the form immediately for better UX
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Handle the cus_id field specially
+    if (name === 'cus_id' && value.trim() !== '') {
+      try {
+        // Add loading state if needed
+        const customerData = await fetchCustomerData(value);
+        
+        if (customerData) {
+          setFormData(prev => ({
+            ...prev,
+            name: `${customerData.cus_fName} ${customerData.cus_lName}`,
+            cus_phoneNum: customerData.cus_phoneNum || '',
+            cus_address: customerData.cus_address || ''
+          }));
+          
+          toast.success('Customer data loaded');
+        } else {
+          // Clear related fields if no customer found
+          setFormData(prev => ({
+            ...prev,
+            name: '',
+            cus_phoneNum: '',
+            cus_address: ''
+          }));
+        }
+      } catch (error) {
+        console.error('Error in handleInputChange:', error);
+        toast.error('Error loading customer data');
+      }
+      return;
+    }
+
+    // Original handling for other fields
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+>>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
         ...prev,
         [name]: checked,
       }));
@@ -110,9 +224,65 @@ const CustomerReceipt = ({ onClose }) => {
     }, 100);
   };
 
-  const handleSubmit = () => {
+  const submitLaundryRecord = async () => {
+    try {
+      // Prepare the payload from formData
+      const payload = {
+        cus_id: formData.cus_id,
+        batch: formData.batch,
+        shirts: parseInt(formData.shirts) || 0,
+        pants: parseInt(formData.pants) || 0,
+        jeans: parseInt(formData.jeans) || 0,
+        shorts: parseInt(formData.shorts) || 0,
+        towels: parseInt(formData.towel) || 0,
+        pillow_case: parseInt(formData.pillowCase) || 0,
+        bed_sheets: parseInt(formData.bedSheets) || 0,
+        washing: formData.washing,
+        kg: formData.kl,
+        num_items: parseInt(formData.itemCount) || 0,
+        total_amount: parseFloat(formData.totalAmount) || 0
+      };
+
+      const response = await fetch('http://localhost:3000/api/customers/laundry-record', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Laundry record saved successfully!');
+        // Clear form or close modal after successful submission
+        // onClose();
+        setLaundryId(result.laundryId);
+      } else {
+        toast.error(result.message || 'Failed to save laundry record');
+      }
+
+    } catch (error) {
+      console.error('Error submitting laundry record:', error);
+      toast.error('Failed to submit laundry record');
+    }
+  };
+
+  // Update the handleSubmit function to use submitLaundryRecord
+  const handleSubmit = async () => {
+    // Calculate totals first
     calculateTotal();
+<<<<<<< HEAD
     alert("Receipt submitted successfully!");
+=======
+    
+    // Submit the record
+    await submitLaundryRecord();
+>>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
   };
 
   const fetchCustomers = async () => {
@@ -214,12 +384,17 @@ const CustomerReceipt = ({ onClose }) => {
             {/* Left Column */}
             <div className="space-y-4">
               <div>
+<<<<<<< HEAD
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   CUS_ID:
                 </label>
                 <div className="border-b-2 border-gray-300 pb-1">
                   {formData.cusId}
                 </div>
+=======
+                <label className="block text-sm font-semibold text-gray-700 mb-1">CUS_ID:</label>
+                <div className="border-b-2 border-gray-300 pb-1">{formData.cus_id}</div>
+>>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -230,12 +405,17 @@ const CustomerReceipt = ({ onClose }) => {
                 </div>
               </div>
               <div>
+<<<<<<< HEAD
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   Phone number:
                 </label>
                 <div className="border-b-2 border-gray-300 pb-1">
                   {formData.phone}
                 </div>
+=======
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone number:</label>
+                <div className="border-b-2 border-gray-300 pb-1">{formData.cus_phoneNum}</div>
+>>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -274,12 +454,17 @@ const CustomerReceipt = ({ onClose }) => {
             {/* Right Column */}
             <div className="space-y-4">
               <div>
+<<<<<<< HEAD
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   LAUNDRY ID:
                 </label>
                 <div className="border-b-2 border-gray-300 pb-1">
                   {formData.laundryId}
                 </div>
+=======
+                <label className="block text-sm font-semibold text-gray-700 mb-1">LAUNDRY ID:</label>
+                { laundryId && (<div className="border-b-2 border-gray-300 pb-1">{laundryId}</div>)}
+>>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -486,8 +671,8 @@ const CustomerReceipt = ({ onClose }) => {
               CUS_ID:
             </label>
             <Input
-              name="cusId"
-              value={formData.cusId}
+              name="cus_id"
+              value={formData.cus_id}
               onChange={handleInputChange}
               placeholder="Enter Customer ID"
               className="bg-white text-slate-900"
@@ -522,10 +707,10 @@ const CustomerReceipt = ({ onClose }) => {
             <div className="space-y-4">
               <div>
                 <Input
-                  name="phone"
+                  name="cus_phoneNum"
                   type="number"
                   min="0"
-                  value={formData.phone}
+                  value={formData.cus_phoneNum}
                   onChange={handleInputChange}
                   placeholder="Phone number"
                   className="bg-white text-slate-900 border-slate-300 placeholder-slate-500"
@@ -533,8 +718,8 @@ const CustomerReceipt = ({ onClose }) => {
               </div>
               <div>
                 <Input
-                  name="address"
-                  value={formData.address}
+                  name="cus_address"
+                  value={formData.cus_address}
                   onChange={handleInputChange}
                   placeholder="Address"
                   className="bg-white text-slate-900 border-slate-300 placeholder-slate-500"
@@ -674,7 +859,7 @@ const CustomerReceipt = ({ onClose }) => {
           {/* Action Buttons */}
           <div className="flex justify-center gap-4 mb-4">
             <Button
-              onClick={handleSubmit}
+              onClick={calculateTotal}
               className="bg-[#126280] hover:bg-blue-700 text-white px-8 py-3 rounded-full"
             >
               <Calculator className="h-5 w-5 mr-2" />
