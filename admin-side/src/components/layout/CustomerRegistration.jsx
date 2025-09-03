@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 
-const CustomerRegistration = ({ onClose, onSave }) => {
+// Update the component definition to accept registeredBy prop
+const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
   const [formData, setFormData] = useState({
     cus_fName: "",
     cus_lName: "",
@@ -14,7 +15,16 @@ const CustomerRegistration = ({ onClose, onSave }) => {
     cus_city: "",
     cus_zipCode: "",
     cus_type: "regular",
+    registeredBy: registeredBy // Set initial value from prop
   });
+
+  // Add useEffect to update registeredBy when prop changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      registeredBy: registeredBy
+    }));
+  }, [registeredBy]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -54,6 +64,7 @@ const CustomerRegistration = ({ onClose, onSave }) => {
         cus_city: "",
         cus_zipCode: "",
         cus_type: "regular",
+        registeredBy: ""
       });
 
       // Call onSave if provided
