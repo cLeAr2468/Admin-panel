@@ -352,7 +352,7 @@ const CustomerReceipt = ({ onClose }) => {
                   CUS_ID:
                 </label>
                 <div className="border-b-2 border-gray-300 pb-1">
-                  {formData.cusId}
+                  {formData.cus_id}
                 </div>
               </div>
               <div>
@@ -368,7 +368,7 @@ const CustomerReceipt = ({ onClose }) => {
                   Phone number:
                 </label>
                 <div className="border-b-2 border-gray-300 pb-1">
-                  {formData.phone}
+                  {formData.cus_phoneNum}
                 </div>
               </div>
               <div>
@@ -411,9 +411,7 @@ const CustomerReceipt = ({ onClose }) => {
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   LAUNDRY ID:
                 </label>
-                <div className="border-b-2 border-gray-300 pb-1">
-                  {formData.laundryId}
-                </div>
+                { laundryId && (<div className="border-b-2 border-gray-300 pb-1">{laundryId}</div>)}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
