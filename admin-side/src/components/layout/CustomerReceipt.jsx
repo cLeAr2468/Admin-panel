@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from "react";
 import { X, Search, Calculator, Printer, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
@@ -7,36 +6,12 @@ import { Input } from "../ui/input";
 import image from "../../../public/laundry-logo.jpg";
 import debounce from "lodash/debounce";
 import { format } from "date-fns";
-=======
-import React, { useState, useEffect } from 'react';
-import { X, Search, Calculator, Printer, ChevronDown } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Input } from '../ui/input';
-import image from '../../../public/laundry-logo.jpg';
 import { toast } from 'react-hot-toast';
->>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
 
 const CustomerReceipt = ({ onClose }) => {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
    const [laundryId, setLaundryId] = useState(null);
   const [formData, setFormData] = useState({
-<<<<<<< HEAD
-    cusId: "",
-    name: "",
-    phone: "",
-    address: "",
-    batch: "",
-    laundryId: "",
-    shirts: "",
-    pants: "",
-    jeans: "",
-    shorts: "",
-    towel: "",
-    pillowCase: "",
-    bedSheets: "",
-    kl: "",
-=======
     cus_id: '',
     name: '',
     cus_phoneNum: '',
@@ -51,7 +26,6 @@ const CustomerReceipt = ({ onClose }) => {
     pillowCase: '',
     bedSheets: '',
     kl: '',
->>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
     washing: true,
     totalAmount: "0.00",
     itemCount: "0",
@@ -107,11 +81,6 @@ const CustomerReceipt = ({ onClose }) => {
 
   const handleInputChange = async (e) => {
     const { name, value, type, checked } = e.target;
-<<<<<<< HEAD
-
-    if (type === "checkbox") {
-      setFormData((prev) => ({
-=======
     
     // Update the form immediately for better UX
     setFormData(prev => ({
@@ -153,7 +122,6 @@ const CustomerReceipt = ({ onClose }) => {
     // Original handling for other fields
     if (type === 'checkbox') {
       setFormData(prev => ({
->>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
         ...prev,
         [name]: checked,
       }));
@@ -276,13 +244,9 @@ const CustomerReceipt = ({ onClose }) => {
   const handleSubmit = async () => {
     // Calculate totals first
     calculateTotal();
-<<<<<<< HEAD
-    alert("Receipt submitted successfully!");
-=======
     
     // Submit the record
     await submitLaundryRecord();
->>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
   };
 
   const fetchCustomers = async () => {
@@ -337,10 +301,10 @@ const CustomerReceipt = ({ onClose }) => {
   const handleCustomerSelect = (customer) => {
     setFormData((prev) => ({
       ...prev,
-      cusId: customer.cus_id,
+      cus_id: customer.cus_id,
       name: `${customer.cus_fName} ${customer.cus_lName}`,
-      phone: customer.cus_phoneNum,
-      address: customer.cus_address,
+      cus_phoneNum: customer.cus_phoneNum,
+      cus_address: customer.cus_address,
     }));
   };
 
@@ -384,17 +348,12 @@ const CustomerReceipt = ({ onClose }) => {
             {/* Left Column */}
             <div className="space-y-4">
               <div>
-<<<<<<< HEAD
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   CUS_ID:
                 </label>
                 <div className="border-b-2 border-gray-300 pb-1">
                   {formData.cusId}
                 </div>
-=======
-                <label className="block text-sm font-semibold text-gray-700 mb-1">CUS_ID:</label>
-                <div className="border-b-2 border-gray-300 pb-1">{formData.cus_id}</div>
->>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -405,17 +364,12 @@ const CustomerReceipt = ({ onClose }) => {
                 </div>
               </div>
               <div>
-<<<<<<< HEAD
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   Phone number:
                 </label>
                 <div className="border-b-2 border-gray-300 pb-1">
                   {formData.phone}
                 </div>
-=======
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone number:</label>
-                <div className="border-b-2 border-gray-300 pb-1">{formData.cus_phoneNum}</div>
->>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -454,17 +408,12 @@ const CustomerReceipt = ({ onClose }) => {
             {/* Right Column */}
             <div className="space-y-4">
               <div>
-<<<<<<< HEAD
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   LAUNDRY ID:
                 </label>
                 <div className="border-b-2 border-gray-300 pb-1">
                   {formData.laundryId}
                 </div>
-=======
-                <label className="block text-sm font-semibold text-gray-700 mb-1">LAUNDRY ID:</label>
-                { laundryId && (<div className="border-b-2 border-gray-300 pb-1">{laundryId}</div>)}
->>>>>>> fb7d2dbf6bbee81cb80684cb6bd1bb981d7592de
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
