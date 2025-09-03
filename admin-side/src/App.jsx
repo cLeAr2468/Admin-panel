@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Header from './components/layout/header';
 import Home from './components/layout/home';
 import About from './components/layout/about';
@@ -55,6 +56,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
+      <Toaster position="top-right" />
       <AppContent />
     </Router>
   );

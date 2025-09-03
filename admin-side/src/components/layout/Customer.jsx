@@ -5,16 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import CustomerRegistration from './CustomerRegistration';
 import CustomerReceipt from './CustomerReceipt';
 import Sidebar from './Sidebar';
+import { format } from "date-fns";
 
 const Customer = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [registrationType, setRegistrationType] = useState('');
+
+  const today = new Date();
+  const formattedDate = format(today, "MMMM dd, yyyy");
 
   const handleCustomerAction = (action) => {
     console.log(`${action} clicked`);
     // Handle different customer actions
     switch (action) {
       case 'registration':
+        setRegistrationType('ADMIN'); // Default to ADMIN for the main registration button
         setShowRegistration(true);
         break;
       case 'receipt':
@@ -25,9 +31,11 @@ const Customer = () => {
         alert('View Customer Records functionality coming soon!');
         break;
       case 'admin-register':
+        setRegistrationType('ADMIN');
         setShowRegistration(true);
         break;
       case 'customer-register':
+        setRegistrationType('CUSTOMER');
         setShowRegistration(true);
         break;
       default:
@@ -61,7 +69,7 @@ const Customer = () => {
           <Card className="bg-transparent shadow-sm border-0">
             <CardContent className="p-3">
               <div className="text-lg font-semibold text-slate-700">
-                Date: April 4, 2025
+                Date: {formattedDate}
               </div>
             </CardContent>
           </Card>
@@ -141,8 +149,12 @@ const Customer = () => {
       {/* Customer Registration Modal */}
       {showRegistration && (
         <CustomerRegistration
-          onClose={() => setShowRegistration(false)}
+          onClose={() => {
+            setShowRegistration(false);
+            setRegistrationType(''); // Reset registration type when closing
+          }}
           onSave={handleSaveCustomer}
+          registeredBy={registrationType} // Pass the registration type as a prop
         />
       )}
 
