@@ -17,8 +17,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Search, Eye, Pencil } from "lucide-react";
+import { ArrowLeft, Search, Eye, Pencil, Save, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -84,9 +93,13 @@ const UserTable = ({ embedded = false }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
+    middleName: "",
     email: "",
     role: "",
+    address: "",
+    phoneNumber: "",
     password: "",
     confirmPassword: "",
   });
@@ -107,24 +120,34 @@ const UserTable = ({ embedded = false }) => {
       return;
     }
 
-    const nextId = accounts.length
-      ? Math.max(...accounts.map((account) => account.id)) + 1
-      : 1;
+    const nextId = users.length ? Math.max(...users.map((user) => user.id)) + 1 : 1;
 
-    const newAccount = {
+    const newUser = {
       id: nextId,
-      name: formData.name,
+      name: `${formData.firstName} ${formData.lastName}`,
       email: formData.email,
-      role: formData.role || "user",
+      role: formData.role || "customer",
       status: "active",
+      dateRegistered: new Date().toLocaleDateString(),
+      registerdby: "admin", // You might want to get this from your auth context
+      // Additional fields stored but not shown in the table
+      firstName: formData.firstName,
+      middleName: formData.middleName,
+      lastName: formData.lastName,
+      address: formData.address,
+      phoneNumber: formData.phoneNumber
     };
 
-    setAccounts((prev) => [...prev, newAccount]);
+    setUsers((prev) => [...prev, newUser]);
 
     setFormData({
-      name: "",
+      firstName: "",
+      lastName: "",
+      middleName: "",
       email: "",
       role: "",
+      address: "",
+      phoneNumber: "",
       password: "",
       confirmPassword: "",
     });
@@ -238,13 +261,177 @@ const UserTable = ({ embedded = false }) => {
               </SelectContent>
             </Select>
 
-            <Button
-              variant="default"
-              className="bg-[#126280] hover:bg-[#126280]/80"
-              onClick={() => navigate('/dashboard/register')}
-            >
-              Add New User
-            </Button>
+              <Button
+                variant="default"
+                className="bg-[#126280] hover:bg-[#126280]/80"
+                onClick={() => setIsDialogOpen(true)}
+              >
+                Add New User
+              </Button>
+              {isDialogOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg">
+                    <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-4">
+                      <h2 className="text-2xl font-bold text-slate-800">
+                        User Registration
+                      </h2>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsDialogOpen(false)}
+                        className="h-8 w-8"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="p-6 pt-0">
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-slate-700 mb-2 block">
+                              First Name *
+                            </label>
+                            <Input
+                              name="firstName"
+                              value={formData.firstName}
+                              onChange={handleChange}
+                              placeholder="Enter first name"
+                              required
+                              className="w-full"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-medium text-slate-700 mb-2 block">
+                              Last Name *
+                            </label>
+                            <Input
+                              name="lastName"
+                              value={formData.lastName}
+                              onChange={handleChange}
+                              placeholder="Enter last name"
+                              required
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-slate-700 mb-2 block">
+                              Email *
+                            </label>
+                            <Input
+                              name="email"
+                              type="email"
+                              value={formData.email}
+                              onChange={handleChange}
+                              placeholder="Enter email address"
+                              required
+                              className="w-full"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-medium text-slate-700 mb-2 block">
+                              Phone Number *
+                            </label>
+                            <Input
+                              name="phoneNumber"
+                              type="tel"
+                              value={formData.phoneNumber}
+                              onChange={handleChange}
+                              placeholder="Enter phone number"
+                              required
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-slate-700 mb-2 block">
+                            Address *
+                          </label>
+                          <Input
+                            name="address"
+                            value={formData.address}
+                            onChange={handleChange}
+                            placeholder="Enter address"
+                            required
+                            className="w-full"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-slate-700 mb-2 block">
+                              Password *
+                            </label>
+                            <Input
+                              name="password"
+                              type="password"
+                              value={formData.password}
+                              onChange={handleChange}
+                              placeholder="Enter password"
+                              required
+                              className="w-full"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-medium text-slate-700 mb-2 block">
+                              Confirm Password *
+                            </label>
+                            <Input
+                              name="confirmPassword"
+                              type="password"
+                              value={formData.confirmPassword}
+                              onChange={handleChange}
+                              placeholder="Confirm password"
+                              required
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-slate-700 mb-2 block">
+                            Role *
+                          </label>
+                          <Select name="role" value={formData.role} onValueChange={handleRoleChange}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="customer">Customer</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsDialogOpen(false)}
+                            className="px-6"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            className="bg-slate-600 hover:bg-slate-700 px-6"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Save User
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
         
