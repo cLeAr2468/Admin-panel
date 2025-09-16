@@ -4,18 +4,36 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import CustomerRegistration from './CustomerRegistration';
 import CustomerReceipt from './CustomerReceipt';
+import UserTable from './userTable';
+import Custb from './Custb';
 import Sidebar from './Sidebar';
+import CustomerRec from './CustomerRec';
 
 const Customer = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showCustomerRec, setShowCustomerRec] = useState(false);
+  const [showUserTable, setShowUserTable] = useState(false);
+  const [showCustomerTable, setShowCustomerTable] = useState(false);
+  const [registrationType, setRegistrationType] = useState(''); // 'ADMIN' or 'CUSTOMER'
 
   const handleCustomerAction = (action) => {
     console.log(`${action} clicked`);
+    // Reset all states first
+    const resetStates = () => {
+      setShowRegistration(false);
+      setShowReceipt(false);
+      setShowCustomerRec(false);
+      setShowUserTable(false);
+      setShowCustomerTable(false);
+    };
+
+    resetStates(); // Reset all states before setting new one
+
     // Handle different customer actions
     switch (action) {
       case 'registration':
-        setRegistrationType('ADMIN'); // Default to ADMIN for the main registration button
+        setRegistrationType('ADMIN');
         setShowRegistration(true);
         break;
       case 'receipt':
@@ -23,14 +41,12 @@ const Customer = () => {
         break;
       case 'records':
         setShowCustomerRec(true);
-        setShowUserTable(false);
-        setShowCustomerTable(false);
         break;
       case 'admin-register':
-        setShowRegistration(true);
+        setShowUserTable(true);
         break;
       case 'customer-register':
-        setShowRegistration(true);
+        setShowCustomerTable(true);
         break;
       default:
         break;
@@ -58,16 +74,6 @@ const Customer = () => {
           }} />
         </div>
 
-        {/* Top Date Display */}
-        <div className="relative z-10 flex justify-end mb-8">
-          <Card className="bg-transparent shadow-sm border-0">
-            <CardContent className="p-3">
-              <div className="text-lg font-semibold text-slate-700">
-                Date: April 4, 2025
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Main Content Area */}
         {!showUserTable && !showCustomerTable && !showCustomerRec ? (
