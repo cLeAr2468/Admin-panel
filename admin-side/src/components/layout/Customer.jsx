@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
-import { UserPlus, Receipt, Database, ShieldCheck } from 'lucide-react';
+import { UserPlus, Receipt, Database, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import CustomerRegistration from './CustomerRegistration';
 import CustomerReceipt from './CustomerReceipt';
 import Sidebar from './Sidebar';
+import UserTable from './userTable';
+import Custb from './Custb';
+import CustomerRec from './CustomerRec';
 
 const Customer = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showUserTable, setShowUserTable] = useState(false);
+  const [showCustomerTable, setShowCustomerTable] = useState(false);
+  const [showCustomerRec, setShowCustomerRec] = useState(false);
 
   const handleCustomerAction = (action) => {
     console.log(`${action} clicked`);
@@ -21,14 +27,17 @@ const Customer = () => {
         setShowReceipt(true);
         break;
       case 'records':
-        // Handle view customer records
-        alert('View Customer Records functionality coming soon!');
+        setShowCustomerRec(true);
+        setShowUserTable(false);
+        setShowCustomerTable(false);
         break;
       case 'admin-register':
-        setShowRegistration(true);
+        setShowUserTable(true);
+        setShowCustomerTable(false);
         break;
       case 'customer-register':
-        setShowRegistration(true);
+        setShowCustomerTable(true);
+        setShowUserTable(false);
         break;
       default:
         break;
@@ -56,20 +65,11 @@ const Customer = () => {
           }} />
         </div>
 
-        {/* Top Date Display */}
-        <div className="relative z-10 flex justify-end mb-8">
-          <Card className="bg-transparent shadow-sm border-0">
-            <CardContent className="p-3">
-              <div className="text-lg font-semibold text-slate-700">
-                Date: April 4, 2025
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+      
         {/* Main Content Area */}
-        <div className="relative z-10 flex justify-center items-center min-h-[60vh]">
-          <div className="flex gap-8">
+        {!showUserTable && !showCustomerTable && !showCustomerRec ? (
+          <div className="relative z-10 flex justify-center items-center min-h-[60vh]">
+            <div className="flex gap-8">
             {/* Primary Content Block - Left */}
             <Card className="bg-[#688ce4] text-white shadow-xl border-0 w-80">
               <CardHeader className="pb-4">
@@ -123,7 +123,6 @@ const Customer = () => {
                   <ShieldCheck className="h-6 w-6 mr-3" />
                   REGISTER BY ADMIN
                 </Button>
-                
                 <Button
                   variant="secondary"
                   className="w-full h-16 text-slate-900 font-semibold text-lg hover:bg-white/90 transition-all duration-200"
@@ -133,9 +132,32 @@ const Customer = () => {
                   REGISTER BY CUSTOMER
                 </Button>
               </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          <div className="relative z-10">
+            <div className="mb-4">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowUserTable(false);
+                  setShowCustomerTable(false);
+                  setShowCustomerRec(false);
+                }}
+              >
+                <ArrowLeft className="cursor-pointer text-[#126280] hover:text-[#126280]/80" />
+              </Button>
+            </div>
+            <Card className="bg-white shadow-xl border-0">
+              <CardContent className="p-4">
+                {showUserTable && <UserTable embedded={true} />}
+                {showCustomerTable && <Custb embedded={true} />}
+                {showCustomerRec && <CustomerRec />}
+              </CardContent>
             </Card>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Customer Registration Modal */}
@@ -145,7 +167,7 @@ const Customer = () => {
           onSave={handleSaveCustomer}
         />
       )}
-
+      
       {/* Customer Receipt Modal */}
       {showReceipt && (
         <CustomerReceipt
