@@ -5,22 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import CustomerRegistration from './CustomerRegistration';
 import CustomerReceipt from './CustomerReceipt';
 import Sidebar from './Sidebar';
-import UserTable from './userTable';
-import Custb from './Custb';
-import CustomerRec from './CustomerRec';
 
 const Customer = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [showUserTable, setShowUserTable] = useState(false);
-  const [showCustomerTable, setShowCustomerTable] = useState(false);
-  const [showCustomerRec, setShowCustomerRec] = useState(false);
 
   const handleCustomerAction = (action) => {
     console.log(`${action} clicked`);
     // Handle different customer actions
     switch (action) {
       case 'registration':
+        setRegistrationType('ADMIN'); // Default to ADMIN for the main registration button
         setShowRegistration(true);
         break;
       case 'receipt':
@@ -32,12 +27,10 @@ const Customer = () => {
         setShowCustomerTable(false);
         break;
       case 'admin-register':
-        setShowUserTable(true);
-        setShowCustomerTable(false);
+        setShowRegistration(true);
         break;
       case 'customer-register':
-        setShowCustomerTable(true);
-        setShowUserTable(false);
+        setShowRegistration(true);
         break;
       default:
         break;
@@ -65,7 +58,17 @@ const Customer = () => {
           }} />
         </div>
 
-      
+        {/* Top Date Display */}
+        <div className="relative z-10 flex justify-end mb-8">
+          <Card className="bg-transparent shadow-sm border-0">
+            <CardContent className="p-3">
+              <div className="text-lg font-semibold text-slate-700">
+                Date: April 4, 2025
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Content Area */}
         {!showUserTable && !showCustomerTable && !showCustomerRec ? (
           <div className="relative z-10 flex justify-center items-center min-h-[60vh]">
@@ -163,8 +166,12 @@ const Customer = () => {
       {/* Customer Registration Modal */}
       {showRegistration && (
         <CustomerRegistration
-          onClose={() => setShowRegistration(false)}
+          onClose={() => {
+            setShowRegistration(false);
+            setRegistrationType(''); // Reset registration type when closing
+          }}
           onSave={handleSaveCustomer}
+          registeredBy={registrationType} // Pass the registration type as a prop
         />
       )}
       
