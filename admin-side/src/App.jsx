@@ -12,6 +12,8 @@ import Dashboard from './components/layout/Dashboard';
 import Customer from './components/layout/Customer';
 import Inventory from './components/layout/Inventory';
 import Reports from './components/layout/Reports';
+import UserTable from './components/layout/userTable';
+import Custb from './components/layout/Custb';
 function AppContent() {
   const location = useLocation();
 
@@ -23,6 +25,8 @@ function AppContent() {
     '/customer',
     '/inventory',
     '/reports',
+    '/userTable',
+    '/Custb',
   ];
 
   // Check if current path should hide header
@@ -46,7 +50,8 @@ function AppContent() {
           <Route path="/customer" element={<Customer />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/reports" element={<Reports />} />
-
+          <Route path="/userTable" element={<UserTable />} />
+          <Route path="/Custb" element={<Custb />} />
         </Routes>
       </div>
     </div>
