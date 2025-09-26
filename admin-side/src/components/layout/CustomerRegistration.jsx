@@ -4,7 +4,6 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 
-// Update the component definition to accept registeredBy prop
 const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
   const [formData, setFormData] = useState({
     cus_fName: "",
@@ -12,10 +11,10 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
     cus_eMail: "",
     cus_phoneNum: "",
     cus_address: "",
-    cus_city: "",
-    cus_zipCode: "",
-    cus_type: "regular",
-    registeredBy: registeredBy // Set initial value from prop
+    username: "",
+    password: "",
+    confirmPassword: "",
+    registeredBy: registeredBy 
   });
 
   // Add useEffect to update registeredBy when prop changes
@@ -36,6 +35,12 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+
     try {
       const postData = await fetch(
         "http://localhost:3000/api/customers/register",
@@ -54,31 +59,26 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
         throw new Error(result.message || "Failed to register customer");
       }
 
-      // Clear the form
       setFormData({
         cus_fName: "",
         cus_lName: "",
         cus_eMail: "",
         cus_phoneNum: "",
         cus_address: "",
-        cus_city: "",
-        cus_zipCode: "",
-        cus_type: "regular",
+        username: "",
+        password: "",
+        confirmPassword: "",
         registeredBy: ""
       });
 
-      // Call onSave if provided
       if (onSave) {
         onSave(result);
       }
 
-      // Close the modal
       onClose();
 
-      // You might want to show a success message here
       alert("Customer registered successfully!");
     } catch (error) {
-      // Handle the error appropriately
       console.error("Error registering customer:", error);
       alert("Failed to register customer: " + error.message);
     }
@@ -190,16 +190,31 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
               />
             </div>
 
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                Username *
+              </label>
+              <Input
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                placeholder="Enter username"
+                required
+                className="w-full"
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  City *
+                  Password *
                 </label>
                 <Input
-                  name="cus_city"
-                  value={formData.cus_city}
+                  name="password"
+                  type="password"
+                  value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="Enter city"
+                  placeholder="Enter password"
                   required
                   className="w-full"
                 />
@@ -207,33 +222,18 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
 
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  Zip Code *
+                  Confirm Password *
                 </label>
                 <Input
-                  name="cus_zipCode"
-                  value={formData.cus_zipCode}
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  placeholder="Enter zip code"
+                  placeholder="Confirm password"
                   required
                   className="w-full"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                Customer Type
-              </label>
-              <select
-                name="cus_type"
-                value={formData.cus_type}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-              >
-                <option value="regular">Regular Customer</option>
-                <option value="premium">Premium Customer</option>
-                <option value="vip">VIP Customer</option>
-              </select>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">

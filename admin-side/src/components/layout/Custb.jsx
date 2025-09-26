@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Search, Eye, Pencil } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import UserDetailsModal from "./UserDetailsModal";
+import UserEditModal from "./UserEditModal";
 
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +30,7 @@ const UserTable = ({ embedded = false }) => {
       id: 1,
       name: "John Doe",
       email: "john.doe@email.com",
-      role: "user",
+      role: "Customer",
       status: "active",
       dateRegistered: "9/11/2025",
       registerdby: "customer"
@@ -37,7 +39,7 @@ const UserTable = ({ embedded = false }) => {
       id: 2,
       name: "Jane Smith",
       email: "jane.smith@email.com",
-      role: "user",
+      role: "Customer",
       status: "active",
       dateRegistered: "9/10/2025",
       registerdby: "customer"
@@ -46,7 +48,7 @@ const UserTable = ({ embedded = false }) => {
       id: 3,
       name: "Mike Johnson",
       email: "mike.j@email.com",
-      role: "user",
+      role: "Customer",
       status: "inactive",
       dateRegistered: "9/9/2025",
       registerdby: "customer"
@@ -55,7 +57,7 @@ const UserTable = ({ embedded = false }) => {
       id: 4,
       name: "Sarah Wilson",
       email: "sarah.w@email.com",
-      role: "user",
+      role: "Customer",
       status: "active",
       dateRegistered: "9/8/2025",
       registerdby: "customer"
@@ -64,7 +66,7 @@ const UserTable = ({ embedded = false }) => {
       id: 5,
       name: "Alex Brown",
       email: "alex.b@email.com",
-      role: "user",
+      role: "Customer",
       status: "pending",
       dateRegistered: "9/7/2025",
       registerdby: "customer"
@@ -73,7 +75,7 @@ const UserTable = ({ embedded = false }) => {
       id: 6,
       name: "James Brown",
       email: "James.b@email.com",
-      role: "user",
+      role: "Customer",
       status: "pending",
       dateRegistered: "9/7/2025",
       registerdby: "customer"
@@ -82,6 +84,9 @@ const UserTable = ({ embedded = false }) => {
   
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -115,7 +120,7 @@ const UserTable = ({ embedded = false }) => {
       id: nextId,
       name: formData.name,
       email: formData.email,
-      role: formData.role || "user",
+      role: formData.role || "Customer",
       status: "active",
     };
 
@@ -137,7 +142,7 @@ const UserTable = ({ embedded = false }) => {
         return "bg-blue-500 hover:bg-blue-600";
       case "staff":
         return "bg-green-500 hover:bg-green-600";
-      case "user":
+      case "Customer":
         return "bg-purple-500 hover:bg-purple-600";
       default:
         return "bg-gray-500 hover:bg-gray-600";
@@ -305,7 +310,10 @@ const UserTable = ({ embedded = false }) => {
                             className="text-[#126280] hover:text-[#126280]/80"
                             aria-label="View user"
                             title="View"
-                            onClick={() => navigate(`/dashboard/users/${user.id}`, { state: { user } })}
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsDetailsModalOpen(true);
+                            }}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -315,7 +323,10 @@ const UserTable = ({ embedded = false }) => {
                             className="text-[#126280] hover:text-[#126280]/80"
                             aria-label="Edit user"
                             title="Edit"
-                            onClick={() => console.log('Edit user', user.id)}
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsEditModalOpen(true);
+                            }}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -363,7 +374,10 @@ const UserTable = ({ embedded = false }) => {
                         className="text-[#126280] hover:text-[#126280]/80"
                         aria-label="View user"
                         title="View"
-                        onClick={() => navigate(`/dashboard/users/${user.id}`, { state: { user } })}
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setIsDetailsModalOpen(true);
+                        }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -373,7 +387,10 @@ const UserTable = ({ embedded = false }) => {
                         className="text-[#126280] hover:text-[#126280]/80"
                         aria-label="Edit user"
                         title="Edit"
-                        onClick={() => console.log('Edit user', user.id)}
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setIsEditModalOpen(true);
+                        }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -384,6 +401,33 @@ const UserTable = ({ embedded = false }) => {
             )}
           </div>
         </div>
+
+        {/* User Details Modal */}
+        {isDetailsModalOpen && selectedUser && (
+          <UserDetailsModal
+            user={selectedUser}
+            onClose={() => {
+              setIsDetailsModalOpen(false);
+              setSelectedUser(null);
+            }}
+          />
+        )}
+
+        {/* User Edit Modal */}
+        {isEditModalOpen && selectedUser && (
+          <UserEditModal
+            user={selectedUser}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setSelectedUser(null);
+            }}
+            onUpdate={(updatedUser) => {
+              setUsers(users.map((u) => 
+                u.id === updatedUser.id ? updatedUser : u
+              ));
+            }}
+          />
+        )}
       </div>
     </div>
   );
