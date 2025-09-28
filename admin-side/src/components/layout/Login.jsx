@@ -27,12 +27,11 @@ const Login = () => {
         <div className="min-h-screen bg-cover bg-center"
             style={{
                 backgroundImage: "url('/laundry-logo.jpg')",
-                backgroundSize: 'contain',
-                backgroundRepeat: 'repeat'
+
             }}
         >
             <div className='bg-[#A4DCF4] bg-opacity-80 min-h-screen pt-10 md:pt-20'>
-                <div className='container flex flex-col md:flex-row items-center justify-evenly min-h-[500px] gap-4 md:gap-0 mx-auto px-4 md:px-[15%]'>
+                <div className='container flex flex-col md:flex-row items-center justify-center min-h-[500px] gap-16 mx-auto px-4 md:px-[15%]'>
                     {/* Left Side - Image */}
                     <div className="hidden md:block">
                         <img
