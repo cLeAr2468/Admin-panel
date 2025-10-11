@@ -57,7 +57,6 @@ const Customer = () => {
     console.log('Saving customer:', customerData);
     setShowRegistration(false);
     // Here you would typically send the data to your backend
-    alert('Customer saved successfully!');
   };
 
   return (

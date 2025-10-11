@@ -21,65 +21,66 @@ import { ArrowLeft, Search, Eye, Pencil, Save, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import UserDetailsModal from "./UserDetailsModal";
 import UserEditModal from "./UserEditModal";
+import { toast } from "react-hot-toast";
 
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@email.com",
-      role: "admin",
-      status: "active",
-      dateRegistered: "9/11/2025",
-      registerdby: "admin",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@email.com",
-      role: "staff",
-      status: "active",
-      dateRegistered: "9/10/2025",
-      registerdby: "admin",
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike.j@email.com",
-      role: "Customer",
-      status: "inactive",
-      dateRegistered: "9/9/2025",
-      registerdby: "admin",
-    },
-    {
-      id: 4,
-      name: "Sarah Wilson",
-      email: "sarah.w@email.com",
-      role: "staff",
-      status: "active",
-      dateRegistered: "9/8/2025",
-      registerdby: "admin",
-    },
-    {
-      id: 5,
-      name: "Alex Brown",
-      email: "alex.b@email.com",
-      role: "Customer",
-      status: "pending",
-      dateRegistered: "9/7/2025",
-      registerdby: "admin",
-    },
-    {
-      id: 6,
-      name: "James Brown",
-      email: "James.b@email.com",
-      role: "Customer",
-      status: "pending",
-      dateRegistered: "9/7/2025",
-      registerdby: "admin",
-    },
+    // {
+    //   id: 1,
+    //   name: "John Doe",
+    //   email: "john.doe@email.com",
+    //   role: "admin",
+    //   status: "active",
+    //   dateRegistered: "9/11/2025",
+    //   registerdby: "admin",
+    // },
+    // {
+    //   id: 2,
+    //   name: "Jane Smith",
+    //   email: "jane.smith@email.com",
+    //   role: "staff",
+    //   status: "active",
+    //   dateRegistered: "9/10/2025",
+    //   registerdby: "admin",
+    // },
+    // {
+    //   id: 3,
+    //   name: "Mike Johnson",
+    //   email: "mike.j@email.com",
+    //   role: "Customer",
+    //   status: "inactive",
+    //   dateRegistered: "9/9/2025",
+    //   registerdby: "admin",
+    // },
+    // {
+    //   id: 4,
+    //   name: "Sarah Wilson",
+    //   email: "sarah.w@email.com",
+    //   role: "staff",
+    //   status: "active",
+    //   dateRegistered: "9/8/2025",
+    //   registerdby: "admin",
+    // },
+    // {
+    //   id: 5,
+    //   name: "Alex Brown",
+    //   email: "alex.b@email.com",
+    //   role: "Customer",
+    //   status: "pending",
+    //   dateRegistered: "9/7/2025",
+    //   registerdby: "admin",
+    // },
+    // {
+    //   id: 6,
+    //   name: "James Brown",
+    //   email: "James.b@email.com",
+    //   role: "Customer",
+    //   status: "pending",
+    //   dateRegistered: "9/7/2025",
+    //   registerdby: "admin",
+    // },
   ]);
   useEffect(() => {
     const fetchUsers = async () => {
@@ -162,38 +163,43 @@ const UserTable = ({ embedded = false }) => {
       return;
     }
 
-    const nextId = users.length ? Math.max(...users.map((user) => user.id)) + 1 : 1;
+    try {
+      // Match the payload structure exactly as in Postman
+      const response = await fetch(
+        'http://localhost:3000/api/auth/register-user',
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_fName: formData.firstName,
+            user_lName: formData.lastName,
+            user_address: formData.address,
+            username: `${formData.firstName}.${formData.lastName}`.toLowerCase(), // Add username
+            contactNum: formData.phoneNumber,
+            email: formData.email,
+            role: formData.role,
+            status: "active", // Add status field
+            password: formData.password,
+          }),
+        }
+      );
 
-    const newUser = {
-      id: nextId,
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      role: formData.role || "customer",
-      status: "active",
-      dateRegistered: new Date().toLocaleDateString(),
-      registerdby: "admin", // You might want to get this from your auth context
-      // Additional fields stored but not shown in the table
-      firstName: formData.firstName,
-      middleName: formData.middleName,
-      lastName: formData.lastName,
-      address: formData.address,
-      phoneNumber: formData.phoneNumber
-    };
-
-    // setUsers((prev) => [...prev, newUser]);
-
-    setFormData({
-      firstName: "",
-      lastName: "",
-      middleName: "",
-      email: "",
-      role: "",
-      address: "",
-      phoneNumber: "",
-      password: "",
-      confirmPassword: "",
-    });
-    setIsDialogOpen(false);
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success("User registered successfully");
+        navigate("/dashboard");
+      } else {
+        setError(data.message || "Failed to register user");
+        toast.error(data.message || "Failed to register user");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError("Connection error. Please try again later.");
+      toast.error("Connection error. Please try again later.");
+    }
   };
 
   const getRoleBadgeColor = (role) => {

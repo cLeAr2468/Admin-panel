@@ -26,62 +26,107 @@ const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@email.com",
-      role: "Customer",
-      status: "active",
-      dateRegistered: "9/11/2025",
-      registerdby: "customer"
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@email.com",
-      role: "Customer",
-      status: "active",
-      dateRegistered: "9/10/2025",
-      registerdby: "customer"
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike.j@email.com",
-      role: "Customer",
-      status: "inactive",
-      dateRegistered: "9/9/2025",
-      registerdby: "customer"
-    },
-    {
-      id: 4,
-      name: "Sarah Wilson",
-      email: "sarah.w@email.com",
-      role: "Customer",
-      status: "active",
-      dateRegistered: "9/8/2025",
-      registerdby: "customer"
-    },
-    {
-      id: 5,
-      name: "Alex Brown",
-      email: "alex.b@email.com",
-      role: "Customer",
-      status: "pending",
-      dateRegistered: "9/7/2025",
-      registerdby: "customer"
-    },
-     {
-      id: 6,
-      name: "James Brown",
-      email: "James.b@email.com",
-      role: "Customer",
-      status: "pending",
-      dateRegistered: "9/7/2025",
-      registerdby: "customer"
-    }
+    // {
+    //   id: 1,
+    //   name: "John Doe",
+    //   email: "john.doe@email.com",
+    //   role: "Customer",
+    //   status: "active",
+    //   dateRegistered: "9/11/2025",
+    //   registerdby: "customer"
+    // },
+    // {
+    //   id: 2,
+    //   name: "Jane Smith",
+    //   email: "jane.smith@email.com",
+    //   role: "Customer",
+    //   status: "active",
+    //   dateRegistered: "9/10/2025",
+    //   registerdby: "customer"
+    // },
+    // {
+    //   id: 3,
+    //   name: "Mike Johnson",
+    //   email: "mike.j@email.com",
+    //   role: "Customer",
+    //   status: "inactive",
+    //   dateRegistered: "9/9/2025",
+    //   registerdby: "customer"
+    // },
+    // {
+    //   id: 4,
+    //   name: "Sarah Wilson",
+    //   email: "sarah.w@email.com",
+    //   role: "Customer",
+    //   status: "active",
+    //   dateRegistered: "9/8/2025",
+    //   registerdby: "customer"
+    // },
+    // {
+    //   id: 5,
+    //   name: "Alex Brown",
+    //   email: "alex.b@email.com",
+    //   role: "Customer",
+    //   status: "pending",
+    //   dateRegistered: "9/7/2025",
+    //   registerdby: "customer"
+    // },
+    //  {
+    //   id: 6,
+    //   name: "James Brown",
+    //   email: "James.b@email.com",
+    //   role: "Customer",
+    //   status: "pending",
+    //   dateRegistered: "9/7/2025",
+    //   registerdby: "customer"
+    // }
   ]);
-  
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await fetch('http://localhost:3000/api/customers');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch customers');
+        }
+
+        const result = await response.json();
+
+        if (result.success && Array.isArray(result.data)) {
+          const formattedCustomers = result.data.map(customer => ({
+            id: customer.cus_id,
+            name: `${customer.cus_lName}, ${customer.cus_fName}`,
+            email: customer.cus_eMail,
+            role: customer.cus_role,
+            status: customer.cus_status?.toLowerCase() || 'pending',
+            dateRegistered: new Date(customer.date_registered).toLocaleDateString(),
+            registerdby: customer.registeredBy,
+            registeredAt: new Date(customer.date_registered).getTime()
+          }));
+          
+          setUsers(formattedCustomers);
+        } else {
+          throw new Error('Invalid data format received');
+        }
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        setError('Failed to load customers. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCustomers();
+
+    // Set up polling every 30 seconds
+    const interval = setInterval(fetchCustomers, 30000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
+  }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
