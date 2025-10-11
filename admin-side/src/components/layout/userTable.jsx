@@ -19,15 +19,8 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Search, Eye, Pencil, Save, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import UserDetailsModal from "./UserDetailsModal";
+import UserEditModal from "./UserEditModal";
 
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -55,7 +48,7 @@ const UserTable = ({ embedded = false }) => {
       id: 3,
       name: "Mike Johnson",
       email: "mike.j@email.com",
-      role: "user",
+      role: "Customer",
       status: "inactive",
       dateRegistered: "9/9/2025",
       registerdby: "admin",
@@ -73,7 +66,7 @@ const UserTable = ({ embedded = false }) => {
       id: 5,
       name: "Alex Brown",
       email: "alex.b@email.com",
-      role: "user",
+      role: "Customer",
       status: "pending",
       dateRegistered: "9/7/2025",
       registerdby: "admin",
@@ -82,7 +75,7 @@ const UserTable = ({ embedded = false }) => {
       id: 6,
       name: "James Brown",
       email: "James.b@email.com",
-      role: "user",
+      role: "Customer",
       status: "pending",
       dateRegistered: "9/7/2025",
       registerdby: "admin",
@@ -136,11 +129,15 @@ const UserTable = ({ embedded = false }) => {
   }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     middleName: "",
+    username: "",
     email: "",
     role: "",
     address: "",
@@ -165,72 +162,37 @@ const UserTable = ({ embedded = false }) => {
       return;
     }
 
-    try {
-      const response = await fetch(
-        'http://localhost:3000/api/auth/register-user',
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            user_fName: formData.firstName,
-            user_mName: null,
-            user_lName: formData.lastName,
-            user_address: formData.address,
-            username: null,
-            contactNum: formData.phoneNumber,
-            email: formData.email,
-            role: formData.role,
-            status: "Active",
-            password: formData.password,
-            registered_by: "Admin",
-          }),
-        }
-      );
+    const nextId = users.length ? Math.max(...users.map((user) => user.id)) + 1 : 1;
 
-      const data = await response.json();
-      if (response.ok) {
-        navigate("/dashboard");
-      } else {
-        setError(data.message || "Failed to register user");
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-      setError("Connection error. Please try again later.");
-    }
-
-    // const nextId = users.length ? Math.max(...users.map((user) => user.id)) + 1 : 1;
-
-    // const newUser = {
-    //   id: nextId,
-    //   name: `${formData.firstName} ${formData.lastName}`,
-    //   email: formData.email,
-    //   role: formData.role || "customer",
-    //   status: "active",
-    //   dateRegistered: new Date().toLocaleDateString(),
-    //   registerdby: "admin", // You might want to get this from your auth context
-    //   // Additional fields stored but not shown in the table
-    //   firstName: formData.firstName,
-    //   middleName: formData.middleName,
-    //   lastName: formData.lastName,
-    //   address: formData.address,
-    //   phoneNumber: formData.phoneNumber
-    // };
+    const newUser = {
+      id: nextId,
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      role: formData.role || "customer",
+      status: "active",
+      dateRegistered: new Date().toLocaleDateString(),
+      registerdby: "admin", // You might want to get this from your auth context
+      // Additional fields stored but not shown in the table
+      firstName: formData.firstName,
+      middleName: formData.middleName,
+      lastName: formData.lastName,
+      address: formData.address,
+      phoneNumber: formData.phoneNumber
+    };
 
     // setUsers((prev) => [...prev, newUser]);
 
-    // setFormData({
-    //   firstName: "",
-    //   lastName: "",
-    //   middleName: "",
-    //   email: "",
-    //   role: "",
-    //   address: "",
-    //   phoneNumber: "",
-    //   password: "",
-    //   confirmPassword: "",
-    // });
+    setFormData({
+      firstName: "",
+      lastName: "",
+      middleName: "",
+      email: "",
+      role: "",
+      address: "",
+      phoneNumber: "",
+      password: "",
+      confirmPassword: "",
+    });
     setIsDialogOpen(false);
   };
 
@@ -240,7 +202,7 @@ const UserTable = ({ embedded = false }) => {
         return "bg-blue-500 hover:bg-blue-600";
       case "staff":
         return "bg-green-500 hover:bg-green-600";
-      case "user":
+      case "Customer":
         return "bg-purple-500 hover:bg-purple-600";
       default:
         return "bg-gray-500 hover:bg-gray-600";
@@ -389,20 +351,20 @@ const UserTable = ({ embedded = false }) => {
                           />
                         </div>
 
-                        <div>
-                          <label className="text-sm font-medium text-slate-700 mb-2 block">
-                            Last Name *
-                          </label>
-                          <Input
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            placeholder="Enter last name"
-                            required
-                            className="w-full"
-                          />
+                          <div>
+                            <label className="text-sm font-medium text-slate-700 mb-2 block">
+                              Last Name *
+                            </label>
+                            <Input
+                              name="lastName"
+                              value={formData.lastName}
+                              onChange={handleChange}
+                              placeholder="Enter last name"
+                              required
+                              className="w-full"
+                            />
+                          </div>
                         </div>
-                      </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -609,11 +571,7 @@ const UserTable = ({ embedded = false }) => {
                             className="text-[#126280] hover:text-[#126280]/80"
                             aria-label="View user"
                             title="View"
-                            onClick={() =>
-                              navigate(`/dashboard/users/${user.id}`, {
-                                state: { user },
-                              })
-                            }
+                            onClick={() => navigate(`/dashboard/users/${user.id}`, { state: { user } })}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -623,7 +581,7 @@ const UserTable = ({ embedded = false }) => {
                             className="text-[#126280] hover:text-[#126280]/80"
                             aria-label="Edit user"
                             title="Edit"
-                            onClick={() => console.log("Edit user", user.id)}
+                            onClick={() => console.log('Edit user', user.id)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -709,6 +667,33 @@ const UserTable = ({ embedded = false }) => {
             )}
           </div>
         </div>
+
+        {/* User Details Modal */}
+        {isDetailsModalOpen && selectedUser && (
+          <UserDetailsModal
+            user={selectedUser}
+            onClose={() => {
+              setIsDetailsModalOpen(false);
+              setSelectedUser(null);
+            }}
+          />
+        )}
+
+        {/* User Edit Modal */}
+        {isEditModalOpen && selectedUser && (
+          <UserEditModal
+            user={selectedUser}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setSelectedUser(null);
+            }}
+            onUpdate={(updatedUser) => {
+              setUsers(users.map((u) => 
+                u.id === updatedUser.id ? updatedUser : u
+              ));
+            }}
+          />
+        )}
       </div>
     </div>
   );
