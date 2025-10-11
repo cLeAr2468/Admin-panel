@@ -33,7 +33,7 @@ const UserTable = ({ embedded = false }) => {
       role: "admin",
       status: "active",
       dateRegistered: "9/11/2025",
-      registerdby: "admin"
+      registerdby: "admin",
     },
     {
       id: 2,
@@ -42,7 +42,7 @@ const UserTable = ({ embedded = false }) => {
       role: "staff",
       status: "active",
       dateRegistered: "9/10/2025",
-      registerdby: "admin"
+      registerdby: "admin",
     },
     {
       id: 3,
@@ -51,7 +51,7 @@ const UserTable = ({ embedded = false }) => {
       role: "Customer",
       status: "inactive",
       dateRegistered: "9/9/2025",
-      registerdby: "admin"
+      registerdby: "admin",
     },
     {
       id: 4,
@@ -60,7 +60,7 @@ const UserTable = ({ embedded = false }) => {
       role: "staff",
       status: "active",
       dateRegistered: "9/8/2025",
-      registerdby: "admin"
+      registerdby: "admin",
     },
     {
       id: 5,
@@ -69,19 +69,64 @@ const UserTable = ({ embedded = false }) => {
       role: "Customer",
       status: "pending",
       dateRegistered: "9/7/2025",
-      registerdby: "admin"
+      registerdby: "admin",
     },
-     {
+    {
       id: 6,
       name: "James Brown",
       email: "James.b@email.com",
       role: "Customer",
       status: "pending",
       dateRegistered: "9/7/2025",
-      registerdby: "admin"
-    }
+      registerdby: "admin",
+    },
   ]);
-  
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const userResponse = await fetch('http://localhost:3000/api/auth/users', {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': localStorage.getItem('token')
+          },
+          credentials: 'include'
+        });
+
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch users");
+        }
+
+        const results = await userResponse.json();
+        console.log("API response:", results);
+        const formattedUsers = results.data.map(user => {
+        const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
+        const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
+        return {
+          id: user.user_id,
+          name: `${user.user_lName}, ${user.user_fName} ${middleName}`,
+          email: user.email,
+          contact: user.contactNum,
+          role: user.role,
+          status: user.status,
+          dateRegistered: parsedDate && !isNaN(parsedDate) ? parsedDate.toLocaleDateString() : '-',
+          registeredAt: parsedDate && !isNaN(parsedDate) ? parsedDate.getTime() : null,
+          registerdby: user.registered_by,
+          };
+        });
+        setUsers(formattedUsers);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        setError(error.message);
+        setUsers([]);
+      }
+    }
+    fetchUsers();
+
+    const interval = setInterval(fetchUsers, 5000); // fetch every 5 seconds
+    return () => clearInterval(interval); // cleanup on unmount
+
+  }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -110,7 +155,7 @@ const UserTable = ({ embedded = false }) => {
     setFormData((prev) => ({ ...prev, role: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match");
@@ -131,18 +176,16 @@ const UserTable = ({ embedded = false }) => {
       firstName: formData.firstName,
       middleName: formData.middleName,
       lastName: formData.lastName,
-      username: formData.username,
       address: formData.address,
       phoneNumber: formData.phoneNumber
     };
 
-    setUsers((prev) => [...prev, newUser]);
+    // setUsers((prev) => [...prev, newUser]);
 
     setFormData({
       firstName: "",
       lastName: "",
       middleName: "",
-      username: "",
       email: "",
       role: "",
       address: "",
@@ -200,7 +243,9 @@ const UserTable = ({ embedded = false }) => {
   const filteredUsers = users.filter((user) => {
     // Status filter
     const statusOk =
-      statusFilter === "all" ? true : (user.status || "").toLowerCase() === statusFilter;
+      statusFilter === "all"
+        ? true
+        : (user.status || "").toLowerCase() === statusFilter;
 
     // Time range filter
     if (!statusOk) return false;
@@ -211,8 +256,13 @@ const UserTable = ({ embedded = false }) => {
   });
 
   return (
-    <div className={embedded ? "" : "min-h-screen bg-cover bg-center"} style={embedded ? {} : { backgroundImage: "url('/laundry-logo.jpg')" }}>
-      <div className={embedded ? "" : "bg-[#A4DCF4] bg-opacity-80 min-h-screen"}>
+    <div
+      className={embedded ? "" : "min-h-screen bg-cover bg-center"}
+      style={embedded ? {} : { backgroundImage: "url('/laundry-logo.jpg')" }}
+    >
+      <div
+        className={embedded ? "" : "bg-[#A4DCF4] bg-opacity-80 min-h-screen"}
+      >
         {/* Top Bar */}
         {!embedded && (
           <div className="flex justify-between items-center px-4">
@@ -260,46 +310,46 @@ const UserTable = ({ embedded = false }) => {
               </SelectContent>
             </Select>
 
-              <Button
-                variant="default"
-                className="bg-[#126280] hover:bg-[#126280]/80"
-                onClick={() => setIsDialogOpen(true)}
-              >
-                Add New User
-              </Button>
-              {isDialogOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg">
-                    <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-4">
-                      <h2 className="text-2xl font-bold text-slate-800">
-                        User Registration
-                      </h2>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setIsDialogOpen(false)}
-                        className="h-8 w-8"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+            <Button
+              variant="default"
+              className="bg-[#126280] hover:bg-[#126280]/80"
+              onClick={() => setIsDialogOpen(true)}
+            >
+              Add New User
+            </Button>
+            {isDialogOpen && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg">
+                  <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-4">
+                    <h2 className="text-2xl font-bold text-slate-800">
+                      User Registration
+                    </h2>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsDialogOpen(false)}
+                      className="h-8 w-8"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-                    <div className="p-6 pt-0">
-                      <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium text-slate-700 mb-2 block">
-                              First Name *
-                            </label>
-                            <Input
-                              name="firstName"
-                              value={formData.firstName}
-                              onChange={handleChange}
-                              placeholder="Enter first name"
-                              required
-                              className="w-full"
-                            />
-                          </div>
+                  <div className="p-6 pt-0">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-slate-700 mb-2 block">
+                            First Name *
+                          </label>
+                          <Input
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            placeholder="Enter first name"
+                            required
+                            className="w-full"
+                          />
+                        </div>
 
                           <div>
                             <label className="text-sm font-medium text-slate-700 mb-2 block">
@@ -316,135 +366,125 @@ const UserTable = ({ embedded = false }) => {
                           </div>
                         </div>
 
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm font-medium text-slate-700 mb-2 block">
-                            Username *
+                            Email *
                           </label>
                           <Input
-                            name="username"
-                            value={formData.username}
+                            name="email"
+                            type="email"
+                            value={formData.email}
                             onChange={handleChange}
-                            placeholder="Enter username"
+                            placeholder="Enter email address"
                             required
                             className="w-full"
                           />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium text-slate-700 mb-2 block">
-                              Email *
-                            </label>
-                            <Input
-                              name="email"
-                              type="email"
-                              value={formData.email}
-                              onChange={handleChange}
-                              placeholder="Enter email address"
-                              required
-                              className="w-full"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium text-slate-700 mb-2 block">
-                              Phone Number *
-                            </label>
-                            <Input
-                              name="phoneNumber"
-                              type="tel"
-                              value={formData.phoneNumber}
-                              onChange={handleChange}
-                              placeholder="Enter phone number"
-                              required
-                              className="w-full"
-                            />
-                          </div>
-                        </div>
-
                         <div>
                           <label className="text-sm font-medium text-slate-700 mb-2 block">
-                            Address *
+                            Phone Number *
                           </label>
                           <Input
-                            name="address"
-                            value={formData.address}
+                            name="phoneNumber"
+                            type="tel"
+                            value={formData.phoneNumber}
                             onChange={handleChange}
-                            placeholder="Enter address"
+                            placeholder="Enter phone number"
+                            required
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 mb-2 block">
+                          Address *
+                        </label>
+                        <Input
+                          name="address"
+                          value={formData.address}
+                          onChange={handleChange}
+                          placeholder="Enter address"
+                          required
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-slate-700 mb-2 block">
+                            Password *
+                          </label>
+                          <Input
+                            name="password"
+                            type="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Enter password"
                             required
                             className="w-full"
                           />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium text-slate-700 mb-2 block">
-                              Password *
-                            </label>
-                            <Input
-                              name="password"
-                              type="password"
-                              value={formData.password}
-                              onChange={handleChange}
-                              placeholder="Enter password"
-                              required
-                              className="w-full"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium text-slate-700 mb-2 block">
-                              Confirm Password *
-                            </label>
-                            <Input
-                              name="confirmPassword"
-                              type="password"
-                              value={formData.confirmPassword}
-                              onChange={handleChange}
-                              placeholder="Confirm password"
-                              required
-                              className="w-full"
-                            />
-                          </div>
-                        </div>
-
                         <div>
                           <label className="text-sm font-medium text-slate-700 mb-2 block">
-                            Role *
+                            Confirm Password *
                           </label>
-                          <Select name="role" value={formData.role} onValueChange={handleRoleChange}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="customer">Customer</SelectItem>
-                              <SelectItem value="staff">Staff</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            name="confirmPassword"
+                            type="password"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            placeholder="Confirm password"
+                            required
+                            className="w-full"
+                          />
                         </div>
+                      </div>
 
-                        <div className="flex justify-end gap-3 pt-4">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setIsDialogOpen(false)}
-                            className="px-6"
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="submit"
-                            className="bg-slate-600 hover:bg-slate-700 px-6"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Save User
-                          </Button>
-                        </div>
-                      </form>
-                    </div>
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 mb-2 block">
+                          Role *
+                        </label>
+                        <Select
+                          name="role"
+                          value={formData.role}
+                          onValueChange={handleRoleChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Customer">Customer</SelectItem>
+                            <SelectItem value="Staff">Staff</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsDialogOpen(false)}
+                          className="px-6"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          className="bg-slate-600 hover:bg-slate-700 px-6"
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          Save User
+                        </Button>
+                      </div>
+                    </form>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
           </div>
         </div>
         
@@ -456,27 +496,47 @@ const UserTable = ({ embedded = false }) => {
             <Table className="[&_tbody_tr:hover]:bg-white">
               <TableHeader>
                 <TableRow className="bg-[#126280] hover:bg-[#126280]">
-                  <TableHead className="text-white font-semibold">Name</TableHead>
-                  <TableHead className="text-white font-semibold">Email</TableHead>
-                  <TableHead className="text-white font-semibold">Role</TableHead>
-                  <TableHead className="text-white font-semibold">Status</TableHead>
-                  <TableHead className="text-white font-semibold">Date Registered</TableHead>
-                  <TableHead className="text-white font-semibold">Registered By</TableHead>
-                  <TableHead className="text-white font-semibold text-center">Actions</TableHead>
+                  <TableHead className="text-white font-semibold">
+                    Name
+                  </TableHead>
+                  <TableHead className="text-white font-semibold">
+                    Email
+                  </TableHead>
+                  <TableHead className="text-white font-semibold">
+                    Role
+                  </TableHead>
+                  <TableHead className="text-white font-semibold">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-white font-semibold">
+                    Date Registered
+                  </TableHead>
+                  <TableHead className="text-white font-semibold">
+                    Registered By
+                  </TableHead>
+                  <TableHead className="text-white font-semibold text-center">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={8} className="text-center">
+                      Loading...
+                    </TableCell>
                   </TableRow>
                 ) : error ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-red-500">{error}</TableCell>
+                    <TableCell colSpan={8} className="text-center text-red-500">
+                      {error}
+                    </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center">No users found</TableCell>
+                    <TableCell colSpan={8} className="text-center">
+                      No users found
+                    </TableCell>
                   </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
@@ -484,12 +544,20 @@ const UserTable = ({ embedded = false }) => {
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge className={`${getRoleBadgeColor(user.role)} text-white`}>
+                        <Badge
+                          className={`${getRoleBadgeColor(
+                            user.role
+                          )} text-white`}
+                        >
                           {user.role.toUpperCase()}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`${getStatusBadgeColor(user.status)} text-white`}>
+                        <Badge
+                          className={`${getStatusBadgeColor(
+                            user.status
+                          )} text-white`}
+                        >
                           {user.status.toUpperCase()}
                         </Badge>
                       </TableCell>
@@ -503,10 +571,7 @@ const UserTable = ({ embedded = false }) => {
                             className="text-[#126280] hover:text-[#126280]/80"
                             aria-label="View user"
                             title="View"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setIsDetailsModalOpen(true);
-                            }}
+                            onClick={() => navigate(`/dashboard/users/${user.id}`, { state: { user } })}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -516,10 +581,7 @@ const UserTable = ({ embedded = false }) => {
                             className="text-[#126280] hover:text-[#126280]/80"
                             aria-label="Edit user"
                             title="Edit"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setIsEditModalOpen(true);
-                            }}
+                            onClick={() => console.log('Edit user', user.id)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -547,17 +609,30 @@ const UserTable = ({ embedded = false }) => {
                   className="bg-white rounded-lg p-4 shadow-md space-y-3"
                 >
                   <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-[#126280]">{user.name}</h3>
-                    <Badge className={`${getRoleBadgeColor(user.role)} text-white`}>
+                    <h3 className="font-semibold text-[#126280]">
+                      {user.name}
+                    </h3>
+                    <Badge
+                      className={`${getRoleBadgeColor(user.role)} text-white`}
+                    >
                       {user.role.toUpperCase()}
                     </Badge>
                   </div>
                   <div className="text-sm space-y-2">
-                    <p><span className="font-medium">Email:</span> {user.email}</p>
-                    <p><span className="font-medium">Date Registered:</span> {user.dateRegistered}</p>
+                    <p>
+                      <span className="font-medium">Email:</span> {user.email}
+                    </p>
+                    <p>
+                      <span className="font-medium">Date Registered:</span>{" "}
+                      {user.dateRegistered}
+                    </p>
                   </div>
                   <div className="flex items-center justify-between pt-2">
-                    <Badge className={`${getStatusBadgeColor(user.status)} text-white`}>
+                    <Badge
+                      className={`${getStatusBadgeColor(
+                        user.status
+                      )} text-white`}
+                    >
                       {user.status.toUpperCase()}
                     </Badge>
                     <div className="flex items-center gap-2">
@@ -567,7 +642,11 @@ const UserTable = ({ embedded = false }) => {
                         className="text-[#126280] hover:text-[#126280]/80"
                         aria-label="View user"
                         title="View"
-                        onClick={() => navigate(`/dashboard/users/${user.id}`, { state: { user } })}
+                        onClick={() =>
+                          navigate(`/dashboard/users/${user.id}`, {
+                            state: { user },
+                          })
+                        }
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -577,7 +656,7 @@ const UserTable = ({ embedded = false }) => {
                         className="text-[#126280] hover:text-[#126280]/80"
                         aria-label="Edit user"
                         title="Edit"
-                        onClick={() => console.log('Edit user', user.id)}
+                        onClick={() => console.log("Edit user", user.id)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
