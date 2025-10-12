@@ -3,15 +3,17 @@ import { ArrowLeft, Save, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
+import { toast } from 'react-hot-toast';
 
 const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
   const [formData, setFormData] = useState({
     cus_fName: "",
     cus_lName: "",
     cus_eMail: "",
+    cus_role: "CUSTOMER",
     cus_phoneNum: "",
     cus_address: "",
-    username: "",
+    cus_username: "",
     password: "",
     confirmPassword: "",
     registeredBy: registeredBy 
@@ -37,7 +39,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
 
@@ -65,7 +67,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
         cus_eMail: "",
         cus_phoneNum: "",
         cus_address: "",
-        username: "",
+        cus_username: "",
         password: "",
         confirmPassword: "",
         registeredBy: ""
@@ -76,11 +78,11 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
       }
 
       onClose();
-
-      alert("Customer registered successfully!");
+      
+      toast.success("Customer registered successfully!");
     } catch (error) {
       console.error("Error registering customer:", error);
-      alert("Failed to register customer: " + error.message);
+      toast.error(error.message || "Failed to register customer");
     }
   };
 
@@ -195,8 +197,8 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
                 Username *
               </label>
               <Input
-                name="username"
-                value={formData.username}
+                name="cus_username"
+                value={formData.cus_username}
                 onChange={handleInputChange}
                 placeholder="Enter username"
                 required
