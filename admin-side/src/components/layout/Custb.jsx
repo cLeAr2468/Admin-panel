@@ -25,62 +25,7 @@ import UserEditModal from "./UserEditModal";
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [users, setUsers] = useState([
-    // {
-    //   id: 1,
-    //   name: "John Doe",
-    //   email: "john.doe@email.com",
-    //   role: "Customer",
-    //   status: "active",
-    //   dateRegistered: "9/11/2025",
-    //   registerdby: "customer"
-    // },
-    // {
-    //   id: 2,
-    //   name: "Jane Smith",
-    //   email: "jane.smith@email.com",
-    //   role: "Customer",
-    //   status: "active",
-    //   dateRegistered: "9/10/2025",
-    //   registerdby: "customer"
-    // },
-    // {
-    //   id: 3,
-    //   name: "Mike Johnson",
-    //   email: "mike.j@email.com",
-    //   role: "Customer",
-    //   status: "inactive",
-    //   dateRegistered: "9/9/2025",
-    //   registerdby: "customer"
-    // },
-    // {
-    //   id: 4,
-    //   name: "Sarah Wilson",
-    //   email: "sarah.w@email.com",
-    //   role: "Customer",
-    //   status: "active",
-    //   dateRegistered: "9/8/2025",
-    //   registerdby: "customer"
-    // },
-    // {
-    //   id: 5,
-    //   name: "Alex Brown",
-    //   email: "alex.b@email.com",
-    //   role: "Customer",
-    //   status: "pending",
-    //   dateRegistered: "9/7/2025",
-    //   registerdby: "customer"
-    // },
-    //  {
-    //   id: 6,
-    //   name: "James Brown",
-    //   email: "James.b@email.com",
-    //   role: "Customer",
-    //   status: "pending",
-    //   dateRegistered: "9/7/2025",
-    //   registerdby: "customer"
-    // }
-  ]);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -99,9 +44,12 @@ const UserTable = ({ embedded = false }) => {
           const formattedCustomers = result.data.map(customer => ({
             id: customer.cus_id,
             name: `${customer.cus_lName}, ${customer.cus_fName}`,
+            username: customer.cus_username,
             email: customer.cus_eMail,
-            role: customer.cus_role,
-            status: customer.cus_status?.toLowerCase() || 'pending',
+            phoneNumber: customer.cus_phoneNum,
+            address: customer.cus_address,
+            role: customer.cus_role?.toUpperCase() || '',
+            status: customer.cus_status?.toUpperCase() || 'PENDING',
             dateRegistered: new Date(customer.date_registered).toLocaleDateString(),
             registerdby: customer.registeredBy,
             registeredAt: new Date(customer.date_registered).getTime()
@@ -195,12 +143,12 @@ const UserTable = ({ embedded = false }) => {
   };
 
   const getStatusBadgeColor = (status) => {
-    switch (status.toLowerCase()) {
-      case "active":
+    switch (status.toUpperCase()) {
+      case "ACTIVE":
         return "bg-emerald-500 hover:bg-emerald-600";
-      case "inactive":
+      case "INACTIVE":
         return "bg-red-500 hover:bg-red-600";
-      case "pending":
+      case "PENDING":
         return "bg-yellow-500 hover:bg-yellow-600";
       default:
         return "bg-gray-500 hover:bg-gray-600";
@@ -467,9 +415,16 @@ const UserTable = ({ embedded = false }) => {
               setSelectedUser(null);
             }}
             onUpdate={(updatedUser) => {
-              setUsers(users.map((u) => 
-                u.id === updatedUser.id ? updatedUser : u
-              ));
+              // Immediately update the users state with the new data
+              setUsers(prevUsers => 
+                prevUsers.map(user => 
+                  user.id === updatedUser.id ? updatedUser : user
+                )
+              );
+              
+              // Also update the selectedUser state if needed
+              setSelectedUser(null);
+              setIsEditModalOpen(false);
             }}
           />
         )}

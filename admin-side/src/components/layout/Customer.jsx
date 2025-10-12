@@ -33,7 +33,7 @@ const Customer = () => {
     // Handle different customer actions
     switch (action) {
       case 'registration':
-        setRegistrationType('ADMIN');
+        setRegistrationType('Customer');
         setShowRegistration(true);
         break;
       case 'receipt':
