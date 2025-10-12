@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Save } from "lucide-react";
+import { toast } from 'react-hot-toast';
 
 const UserEditModal = ({ user, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    middleName: "",
     username: "",
     email: "",
     role: "",
@@ -17,24 +17,35 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
     phoneNumber: "",
   });
 
-  useEffect(() => {
-    // Split the full name into parts
-    const nameParts = user.name.split(" ");
-    const firstName = nameParts[0] || "";
-    const lastName = nameParts[nameParts.length - 1] || "";
-    const middleName = nameParts.slice(1, -1).join(" ") || "";
+  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
 
-    setFormData({
-      firstName,
-      lastName,
-      middleName,
-      username: user.username || "",
-      email: user.email || "",
-      role: user.role || "",
-      status: user.status || "",
-      address: user.address || "",
-      phoneNumber: user.phoneNumber || "",
-    });
+  useEffect(() => {
+    if (user) {
+      const nameParts = user.name.split(", ");
+      const lastName = nameParts[0] || "";
+      const firstName = nameParts[1] || "";
+
+      const formattedRole = user.role?.toUpperCase() || "";
+      const formattedStatus = user.status?.toUpperCase() || "";
+
+      const updatedFormData = {
+        firstName,
+        lastName,
+        username: user.username || "",
+        email: user.email || "",
+        role: formattedRole,
+        status: formattedStatus,
+        address: user.address || "",
+        phoneNumber: user.phoneNumber || "",
+      };
+
+      setFormData(updatedFormData);
+      setSelectedRole(formattedRole);
+      setSelectedStatus(formattedStatus);
+
+      console.log('Initial form data:', updatedFormData);
+    }
   }, [user]);
 
   const handleChange = (event) => {
@@ -46,25 +57,56 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    
-    const updatedUser = {
-      ...user,
-      name: `${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`.trim(),
-      email: formData.email,
-      role: formData.role,
-      status: formData.status,
-      username: formData.username,
-      address: formData.address,
-      phoneNumber: formData.phoneNumber,
-      firstName: formData.firstName,
-      middleName: formData.middleName,
-      lastName: formData.lastName,
-    };
 
-    onUpdate(updatedUser);
-    onClose();
+    try {
+      const updatePayload = {
+        cus_fName: formData.firstName,
+        cus_lName: formData.lastName,
+        cus_eMail: formData.email,
+        cus_role: formData.role || user.role?.toUpperCase(), 
+        cus_status: formData.status || user.status?.toUpperCase(), 
+        cus_phoneNum: formData.phoneNumber,
+        cus_address: formData.address,
+        cus_username: formData.username
+      };
+
+      const response = await fetch(`http://localhost:3000/api/customers/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatePayload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to update customer');
+      }
+
+      const updatedUser = {
+        id: user.id,
+        name: `${formData.lastName}, ${formData.firstName}`,
+        username: formData.username,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        role: formData.role || user.role?.toUpperCase(), 
+        status: formData.status || user.status?.toUpperCase(),
+        dateRegistered: user.dateRegistered,
+        registerdby: user.registerdby,
+        registeredAt: user.registeredAt
+      };
+
+      onUpdate(updatedUser);
+      toast.success('Customer updated successfully');
+      onClose();
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      toast.error(error.message || 'Failed to update customer');
+    }
   };
 
   return (
@@ -185,16 +227,20 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
                   Role *
                 </label>
                 <Select
-                  name="role"
                   value={formData.role}
-                  onValueChange={(value) => handleSelectChange("role", value)}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, role: value }));
+                    setSelectedRole(value);
+                  }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder="Select role">
+                      {formData.role || "Select role"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="STAFF">STAFF</SelectItem>
+                    <SelectItem value="CUSTOMER">CUSTOMER</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -204,16 +250,20 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
                   Status *
                 </label>
                 <Select
-                  name="status"
                   value={formData.status}
-                  onValueChange={(value) => handleSelectChange("status", value)}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, status: value }));
+                    setSelectedStatus(value);
+                  }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Select status">
+                      {formData.status}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                    <SelectItem value="INACTIVE">INACTIVE</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
