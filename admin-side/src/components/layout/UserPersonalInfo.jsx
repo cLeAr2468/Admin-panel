@@ -2,7 +2,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin, CalendarDays, UserCircle2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -101,31 +100,6 @@ const UserPersonalInfo = ({ user }) => {
                 label="Registered By"
                 value={user.registerdby}
               />
-            </Card>
-          </div>
-
-          {/* Additional Information */}
-          <div>
-            <h4 className="text-sm font-semibold text-slate-900 mb-4">
-              Additional Information
-            </h4>
-            <Card className="p-4 space-y-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-slate-500">First Name</p>
-                  <p className="text-base font-medium">{user.firstName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">Last Name</p>
-                  <p className="text-base font-medium">{user.lastName}</p>
-                </div>
-                {user.middleName && (
-                  <div>
-                    <p className="text-sm text-slate-500">Middle Name</p>
-                    <p className="text-base font-medium">{user.middleName}</p>
-                  </div>
-                )}
-              </div>
             </Card>
           </div>
         </div>
