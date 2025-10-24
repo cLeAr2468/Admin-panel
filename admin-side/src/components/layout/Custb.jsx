@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -19,14 +19,75 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Search, Eye, Pencil } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import UserDetailsModal from "./UserDetailsModal";
 import UserEditModal from "./UserEditModal";
+import UserPersonalInfo from "./UserPersonalInfo";
 
-const UserTable = ({ embedded = false }) => {
+const Custb = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [users, setUsers] = useState([]);
 
+  // Static data commented out - now using API
+  /*
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      name: "John Doe",
+      email: "john.doe@email.com",
+      role: "Customer",
+      status: "active",
+      dateRegistered: "9/11/2025",
+      registerdby: "customer"
+    },
+    {
+      id: 2,
+      name: "Jane Smith",
+      email: "jane.smith@email.com",
+      role: "Customer",
+      status: "active",
+      dateRegistered: "9/10/2025",
+      registerdby: "customer"
+    },
+    {
+      id: 3,
+      name: "Mike Johnson",
+      email: "mike.j@email.com",
+      role: "Customer",
+      status: "inactive",
+      dateRegistered: "9/9/2025",
+      registerdby: "customer"
+    },
+    {
+      id: 4,
+      name: "Sarah Wilson",
+      email: "sarah.w@email.com",
+      role: "Customer",
+      status: "active",
+      dateRegistered: "9/8/2025",
+      registerdby: "customer"
+    },
+    {
+      id: 5,
+      name: "Alex Brown",
+      email: "alex.b@email.com",
+      role: "Customer",
+      status: "pending",
+      dateRegistered: "9/7/2025",
+      registerdby: "customer"
+    },
+     {
+      id: 6,
+      name: "James Brown",
+      email: "James.b@email.com",
+      role: "Customer",
+      status: "pending",
+      dateRegistered: "9/7/2025",
+      registerdby: "customer"
+    }
+  ]);
+  */
+
+  // Fetch customers from API
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -37,9 +98,9 @@ const UserTable = ({ embedded = false }) => {
         if (!response.ok) {
           throw new Error('Failed to fetch customers');
         }
-
+        
         const result = await response.json();
-
+        
         if (result.success && Array.isArray(result.data)) {
           const formattedCustomers = result.data.map(customer => ({
             id: customer.cus_id,
@@ -48,13 +109,12 @@ const UserTable = ({ embedded = false }) => {
             email: customer.cus_eMail,
             phoneNumber: customer.cus_phoneNum,
             address: customer.cus_address,
-            role: customer.cus_role?.toUpperCase() || '',
+            role: customer.cus_role?.toUpperCase() || 'CUSTOMER',
             status: customer.cus_status?.toUpperCase() || 'PENDING',
             dateRegistered: new Date(customer.date_registered).toLocaleDateString(),
             registerdby: customer.registeredBy,
             registeredAt: new Date(customer.date_registered).getTime()
           }));
-          
           setUsers(formattedCustomers);
         } else {
           throw new Error('Invalid data format received');
@@ -78,7 +138,7 @@ const UserTable = ({ embedded = false }) => {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [showUserInfo, setShowUserInfo] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -105,11 +165,11 @@ const UserTable = ({ embedded = false }) => {
       return;
     }
 
-    const nextId = accounts.length
-      ? Math.max(...accounts.map((account) => account.id)) + 1
+    const nextId = users.length
+      ? Math.max(...users.map((user) => user.id)) + 1
       : 1;
 
-    const newAccount = {
+    const newUser = {
       id: nextId,
       name: formData.name,
       email: formData.email,
@@ -117,7 +177,7 @@ const UserTable = ({ embedded = false }) => {
       status: "active",
     };
 
-    setAccounts((prev) => [...prev, newAccount]);
+    setUsers((prev) => [...prev, newUser]);
 
     setFormData({
       name: "",
@@ -135,7 +195,7 @@ const UserTable = ({ embedded = false }) => {
         return "bg-blue-500 hover:bg-blue-600";
       case "staff":
         return "bg-green-500 hover:bg-green-600";
-      case "Customer":
+      case "customer":
         return "bg-purple-500 hover:bg-purple-600";
       default:
         return "bg-gray-500 hover:bg-gray-600";
@@ -143,7 +203,7 @@ const UserTable = ({ embedded = false }) => {
   };
 
   const getStatusBadgeColor = (status) => {
-    switch (status.toUpperCase()) {
+    switch (status?.toUpperCase()) {
       case "ACTIVE":
         return "bg-emerald-500 hover:bg-emerald-600";
       case "INACTIVE":
@@ -176,8 +236,7 @@ const UserTable = ({ embedded = false }) => {
   const filteredUsers = users.filter((user) => {
     // Status filter
     const statusOk =
-      statusFilter === "all" ? true : (user.status || "").toLowerCase() === statusFilter;
-
+      statusFilter === "all" ? true : (user.status || "").toLowerCase() === statusFilter.toLowerCase();
     // Time range filter
     if (!statusOk) return false;
     const threshold = getTimeThreshold();
@@ -192,9 +251,25 @@ const UserTable = ({ embedded = false }) => {
         {/* Top Bar */}
         {!embedded && (
           <div className="flex justify-between items-center px-4">
-            <Link to="/dashboard">
-              <ArrowLeft className="cursor-pointer text-[#126280] hover:text-[#126280]/80" />
-            </Link>
+            {showUserInfo ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  className="p-0"
+                  onClick={() => {
+                    setShowUserInfo(false);
+                    setSelectedUser(null);
+                  }}
+                >
+                  <ArrowLeft className="cursor-pointer text-[#126280] hover:text-[#126280]/80" />
+                </Button>
+                <span className="text-[#126280] font-semibold">Back to Customer List</span>
+              </div>
+            ) : (
+              <Link to="/dashboard">
+                <ArrowLeft className="cursor-pointer text-[#126280] hover:text-[#126280]/80" />
+              </Link>
+            )}
           </div>
         )}
 
@@ -249,54 +324,130 @@ const UserTable = ({ embedded = false }) => {
         </div>
         
 
-        {/* Table Section */}
+        {/* Content Section */}
         <div className={embedded ? "p-0" : "px-4 pb-6"}>
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto rounded-lg">
-            <Table className="[&_tbody_tr:hover]:bg-white">
-              <TableHeader>
-                <TableRow className="bg-[#126280] hover:bg-[#126280]">
-                  <TableHead className="text-white font-semibold">Name</TableHead>
-                  <TableHead className="text-white font-semibold">Email</TableHead>
-                  <TableHead className="text-white font-semibold">Role</TableHead>
-                  <TableHead className="text-white font-semibold">Status</TableHead>
-                  <TableHead className="text-white font-semibold">Date Registered</TableHead>
-                  <TableHead className="text-white font-semibold">Registered By</TableHead>
-                  <TableHead className="text-white font-semibold text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          {showUserInfo && selectedUser ? (
+            <div className="bg-white rounded-lg shadow-sm">
+              <UserPersonalInfo
+                user={selectedUser}
+                onClose={() => {
+                  setShowUserInfo(false);
+                  setSelectedUser(null);
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto rounded-lg">
+                <Table className="[&_tbody_tr:hover]:bg-white">
+                  <TableHeader>
+                    <TableRow className="bg-[#126280] hover:bg-[#126280]">
+                      <TableHead className="text-white font-semibold">Name</TableHead>
+                      <TableHead className="text-white font-semibold">Email</TableHead>
+                      <TableHead className="text-white font-semibold">Role</TableHead>
+                      <TableHead className="text-white font-semibold">Status</TableHead>
+                      <TableHead className="text-white font-semibold">Date Registered</TableHead>
+                      <TableHead className="text-white font-semibold">Registered By</TableHead>
+                      <TableHead className="text-white font-semibold text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center">Loading...</TableCell>
+                      </TableRow>
+                    ) : error ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-red-500">{error}</TableCell>
+                      </TableRow>
+                    ) : filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center">No users found</TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <TableRow key={user.id} className="bg-white">
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge className={`${getRoleBadgeColor(user.role)} text-white`}>
+                              {user.role.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${getStatusBadgeColor(user.status)} text-white`}>
+                              {user.status.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{user.dateRegistered}</TableCell>
+                          <TableCell>{user.registerdby}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 justify-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-[#126280] hover:text-[#126280]/80"
+                                aria-label="View user"
+                                title="View"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setShowUserInfo(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-[#126280] hover:text-[#126280]/80"
+                                aria-label="Edit user"
+                                title="Edit"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setIsEditModalOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center">Loading...</TableCell>
-                  </TableRow>
+                  <div className="text-center p-4">Loading...</div>
                 ) : error ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-red-500">{error}</TableCell>
-                  </TableRow>
+                  <div className="text-center text-red-500 p-4">{error}</div>
                 ) : filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center">No users found</TableCell>
-                  </TableRow>
+                  <div className="text-center p-4">No users found</div>
                 ) : (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id} className="bg-white">
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
+                    <div
+                      key={user.id}
+                      className="bg-white rounded-lg p-4 shadow-md space-y-3"
+                    >
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-semibold text-[#126280]">{user.name}</h3>
                         <Badge className={`${getRoleBadgeColor(user.role)} text-white`}>
                           {user.role.toUpperCase()}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
+                      </div>
+                      <div className="text-sm space-y-2">
+                        <p><span className="font-medium">Email:</span> {user.email}</p>
+                        <p><span className="font-medium">Date Registered:</span> {user.dateRegistered}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-2">
                         <Badge className={`${getStatusBadgeColor(user.status)} text-white`}>
                           {user.status.toUpperCase()}
                         </Badge>
-                      </TableCell>
-                      <TableCell>{user.dateRegistered}</TableCell>
-                      <TableCell>{user.registerdby}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 justify-center">
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -305,7 +456,7 @@ const UserTable = ({ embedded = false }) => {
                             title="View"
                             onClick={() => {
                               setSelectedUser(user);
-                              setIsDetailsModalOpen(true);
+                              setShowUserInfo(true);
                             }}
                           >
                             <Eye className="h-4 w-4" />
@@ -324,87 +475,14 @@ const UserTable = ({ embedded = false }) => {
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   ))
                 )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-4">
-            {isLoading ? (
-              <div className="text-center p-4">Loading...</div>
-            ) : error ? (
-              <div className="text-center text-red-500 p-4">{error}</div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="text-center p-4">No users found</div>
-            ) : (
-              filteredUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="bg-white rounded-lg p-4 shadow-md space-y-3"
-                >
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-[#126280]">{user.name}</h3>
-                    <Badge className={`${getRoleBadgeColor(user.role)} text-white`}>
-                      {user.role.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div className="text-sm space-y-2">
-                    <p><span className="font-medium">Email:</span> {user.email}</p>
-                    <p><span className="font-medium">Date Registered:</span> {user.dateRegistered}</p>
-                  </div>
-                  <div className="flex items-center justify-between pt-2">
-                    <Badge className={`${getStatusBadgeColor(user.status)} text-white`}>
-                      {user.status.toUpperCase()}
-                    </Badge>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-[#126280] hover:text-[#126280]/80"
-                        aria-label="View user"
-                        title="View"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setIsDetailsModalOpen(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-[#126280] hover:text-[#126280]/80"
-                        aria-label="Edit user"
-                        title="Edit"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setIsEditModalOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
-
-        {/* User Details Modal */}
-        {isDetailsModalOpen && selectedUser && (
-          <UserDetailsModal
-            user={selectedUser}
-            onClose={() => {
-              setIsDetailsModalOpen(false);
-              setSelectedUser(null);
-            }}
-          />
-        )}
 
         {/* User Edit Modal */}
         {isEditModalOpen && selectedUser && (
@@ -415,16 +493,9 @@ const UserTable = ({ embedded = false }) => {
               setSelectedUser(null);
             }}
             onUpdate={(updatedUser) => {
-              // Immediately update the users state with the new data
-              setUsers(prevUsers => 
-                prevUsers.map(user => 
-                  user.id === updatedUser.id ? updatedUser : user
-                )
-              );
-              
-              // Also update the selectedUser state if needed
-              setSelectedUser(null);
-              setIsEditModalOpen(false);
+              setUsers(users.map((u) => 
+                u.id === updatedUser.id ? updatedUser : u
+              ));
             }}
           />
         )}
@@ -433,4 +504,4 @@ const UserTable = ({ embedded = false }) => {
   );
 };
 
-export default UserTable;
+export default Custb;

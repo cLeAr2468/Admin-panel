@@ -1,5 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -26,6 +28,11 @@ import UserEditModal from "./UserEditModal";
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [users, setUsers] = useState([]);
+  const navigate = useNavigate();
+
+  // Static data commented out - now using API
+  /*
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -70,6 +77,67 @@ const UserTable = ({ embedded = false }) => {
       username: "mikej"
     }
   ]);
+  */
+
+  // Fetch users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const userResponse = await fetch('http://localhost:3000/api/auth/users', {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': localStorage.getItem('token')
+          },
+          credentials: 'include'
+        });
+
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch users");
+        }
+
+        const results = await userResponse.json();
+        console.log("API response:", results);
+        
+        const formattedUsers = results.data.map(user => {
+          const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
+          const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
+          return {
+            id: user.user_id,
+            name: `${user.user_lName}, ${user.user_fName}${middleName}`,
+            email: user.email,
+            contact: user.contactNum,
+            role: user.role,
+            status: user.status,
+            dateRegistered: parsedDate && !isNaN(parsedDate) ? parsedDate.toLocaleDateString() : '-',
+            registeredAt: parsedDate && !isNaN(parsedDate) ? parsedDate.getTime() : null,
+            registerdby: user.registered_by,
+            firstName: user.user_fName,
+            lastName: user.user_lName,
+            middleName: user.user_mName,
+            phoneNumber: user.contactNum,
+            address: user.user_address,
+            username: user.username
+          };
+        });
+        setUsers(formattedUsers);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        setError(error.message);
+        setUsers([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+
+    // Fetch every 5 seconds
+    const interval = setInterval(fetchUsers, 5000);
+    return () => clearInterval(interval); // cleanup on unmount
+  }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -97,45 +165,100 @@ const UserTable = ({ embedded = false }) => {
     setFormData((prev) => ({ ...prev, role: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match");
       return;
     }
 
-    const nextId = users.length ? Math.max(...users.map((user) => user.id)) + 1 : 1;
+    try {
+      setIsLoading(true);
+      // Match the payload structure exactly as in Postman
+      const response = await fetch(
+        'http://localhost:3000/api/auth/register-user',
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_fName: formData.firstName,
+            user_lName: formData.lastName,
+            user_mName: formData.middleName || null,
+            user_address: formData.address,
+            username: formData.username || `${formData.firstName}.${formData.lastName}`.toLowerCase(),
+            contactNum: formData.phoneNumber,
+            email: formData.email,
+            role: formData.role,
+            status: "active",
+            password: formData.password,
+          }),
+        }
+      );
 
-    const newUser = {
-      id: nextId,
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      role: formData.role || "customer",
-      status: "active",
-      dateRegistered: new Date().toLocaleDateString(),
-      registerdby: "admin",
-      firstName: formData.firstName,
-      middleName: formData.middleName,
-      lastName: formData.lastName,
-      username: formData.username,
-      address: formData.address,
-      phoneNumber: formData.phoneNumber
-    };
-
-    setUsers((prev) => [...prev, newUser]);
-    setFormData({
-      firstName: "",
-      lastName: "",
-      middleName: "",
-      username: "",
-      email: "",
-      role: "",
-      address: "",
-      phoneNumber: "",
-      password: "",
-      confirmPassword: "",
-    });
-    setIsDialogOpen(false);
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success("User registered successfully");
+        setFormData({
+          firstName: "",
+          lastName: "",
+          middleName: "",
+          username: "",
+          email: "",
+          role: "",
+          address: "",
+          phoneNumber: "",
+          password: "",
+          confirmPassword: "",
+        });
+        setIsDialogOpen(false);
+        // Refresh user list
+        const userResponse = await fetch('http://localhost:3000/api/auth/users', {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': localStorage.getItem('token')
+          },
+          credentials: 'include'
+        });
+        if (userResponse.ok) {
+          const results = await userResponse.json();
+          const formattedUsers = results.data.map(user => {
+            const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
+            const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
+            return {
+              id: user.user_id,
+              name: `${user.user_lName}, ${user.user_fName}${middleName}`,
+              email: user.email,
+              contact: user.contactNum,
+              role: user.role,
+              status: user.status,
+              dateRegistered: parsedDate && !isNaN(parsedDate) ? parsedDate.toLocaleDateString() : '-',
+              registeredAt: parsedDate && !isNaN(parsedDate) ? parsedDate.getTime() : null,
+              registerdby: user.registered_by,
+              firstName: user.user_fName,
+              lastName: user.user_lName,
+              middleName: user.user_mName,
+              phoneNumber: user.contactNum,
+              address: user.user_address,
+              username: user.username
+            };
+          });
+          setUsers(formattedUsers);
+        }
+      } else {
+        setError(data.message || "Failed to register user");
+        toast.error(data.message || "Failed to register user");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError("Connection error. Please try again later.");
+      toast.error("Connection error. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getRoleBadgeColor = (role) => {
@@ -461,18 +584,32 @@ const UserTable = ({ embedded = false }) => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-slate-700 mb-2 block">
-                      Username *
-                    </label>
-                    <Input
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      placeholder="Enter username"
-                      required
-                      className="w-full"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        Middle Name
+                      </label>
+                      <Input
+                        name="middleName"
+                        value={formData.middleName}
+                        onChange={handleChange}
+                        placeholder="Enter middle name (optional)"
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        Username *
+                      </label>
+                      <Input
+                        name="username"
+                        value={formData.username}
+                        onChange={handleChange}
+                        placeholder="Enter username"
+                        required
+                        className="w-full"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -575,9 +712,13 @@ const UserTable = ({ embedded = false }) => {
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-slate-600 hover:bg-slate-700 px-6">
+                    <Button 
+                      type="submit" 
+                      className="bg-slate-600 hover:bg-slate-700 px-6"
+                      disabled={isLoading}
+                    >
                       <Save className="h-4 w-4 mr-2" />
-                      Save User
+                      {isLoading ? "Saving..." : "Save User"}
                     </Button>
                   </div>
                 </form>
