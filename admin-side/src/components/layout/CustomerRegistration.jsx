@@ -9,6 +9,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
   const [formData, setFormData] = useState({
     cus_fName: "",
     cus_lName: "",
+    cus_mName: "",
     cus_eMail: "",
     cus_role: "CUSTOMER",
     cus_phoneNum: "",
@@ -16,7 +17,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
     cus_username: "",
     password: "",
     confirmPassword: "",
-    registeredBy: registeredBy 
+    registeredBy: registeredBy
   });
 
   // Add useEffect to update registeredBy when prop changes
@@ -37,7 +38,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match!");
       return;
@@ -45,13 +46,27 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
 
     try {
       const postData = await fetch(
-        "http://localhost:3000/api/customers/register",
+        'http://localhost:3000/api/auth/register-user',
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(
+            {
+              user_fName: formData.cus_fName,
+              user_lName: formData.cus_lName,
+              user_mName: formData.cus_mName || null,
+              user_address: formData.cus_address,
+              username: formData.cus_username || `${formData.cus_lName}.${formData.cus_fName}`.toLowerCase(),
+              contactNum: formData.cus_phoneNum,
+              email: formData.cus_eMail,
+              role: formData.cus_role,
+              status: "Pending",
+              password: formData.password,
+              registered_by: "Customer"
+            }
+          ),
         }
       );
 
@@ -78,7 +93,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
       }
 
       onClose();
-      
+
       toast.success("Customer registered successfully!");
     } catch (error) {
       console.error("Error registering customer:", error);

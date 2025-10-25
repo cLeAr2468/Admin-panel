@@ -89,48 +89,63 @@ const Custb = ({ embedded = false }) => {
 
   // Fetch customers from API
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchUsers = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch('http://localhost:3000/api/customers');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch customers');
+        const userResponse = await fetch('http://localhost:3000/api/auth/users', {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': localStorage.getItem('token')
+          },
+          credentials: 'include'
+        });
+
+        if (!userResponse.ok) {
+          throw new Error("Failed to fetch users");
         }
+
+        const results = await userResponse.json();
+        console.log("API response:", results);
         
-        const result = await response.json();
+        const adminUsers = results.data.filter(user => user.registered_by === "Customer");
         
-        if (result.success && Array.isArray(result.data)) {
-          const formattedCustomers = result.data.map(customer => ({
-            id: customer.cus_id,
-            name: `${customer.cus_lName}, ${customer.cus_fName}`,
-            username: customer.cus_username,
-            email: customer.cus_eMail,
-            phoneNumber: customer.cus_phoneNum,
-            address: customer.cus_address,
-            role: customer.cus_role?.toUpperCase() || 'CUSTOMER',
-            status: customer.cus_status?.toUpperCase() || 'PENDING',
-            dateRegistered: new Date(customer.date_registered).toLocaleDateString(),
-            registerdby: customer.registeredBy,
-            registeredAt: new Date(customer.date_registered).getTime()
-          }));
-          setUsers(formattedCustomers);
-        } else {
-          throw new Error('Invalid data format received');
-        }
+        const formattedUsers = adminUsers.map(user => {
+          const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
+          const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
+          return {
+            id: user.user_id,
+            name: `${user.user_lName}, ${user.user_fName}${middleName}`,
+            email: user.email,
+            contact: user.contactNum,
+            role: user.role,
+            status: user.status,
+            dateRegistered: parsedDate && !isNaN(parsedDate) ? parsedDate.toLocaleDateString() : '-',
+            registeredAt: parsedDate && !isNaN(parsedDate) ? parsedDate.getTime() : null,
+            registerdby: user.registered_by,
+            firstName: user.user_fName,
+            lastName: user.user_lName,
+            middleName: user.user_mName,
+            phoneNumber: user.contactNum,
+            address: user.user_address,
+            username: user.username
+          };
+        });
+        setUsers(formattedUsers);
       } catch (error) {
-        console.error('Error fetching customers:', error);
-        setError('Failed to load customers. Please try again later.');
+        console.error('Fetch error:', error);
+        setError(error.message);
+        setUsers([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchCustomers();
+    fetchUsers();
 
     // Set up polling every 30 seconds
-    const interval = setInterval(fetchCustomers, 30000);
+    const interval = setInterval(fetchUsers, 30000);
 
     // Cleanup interval on component unmount
     return () => clearInterval(interval);
