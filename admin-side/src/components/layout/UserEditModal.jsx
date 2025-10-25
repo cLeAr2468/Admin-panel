@@ -62,17 +62,17 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
 
     try {
       const updatePayload = {
-        cus_fName: formData.firstName,
-        cus_lName: formData.lastName,
-        cus_eMail: formData.email,
-        cus_role: formData.role || user.role?.toUpperCase(), 
-        cus_status: formData.status || user.status?.toUpperCase(), 
-        cus_phoneNum: formData.phoneNumber,
-        cus_address: formData.address,
-        cus_username: formData.username
+        user_fName: formData.firstName,
+        user_lName: formData.lastName,
+        user_eMail: formData.email,
+        role: formData.role || user.role?.toUpperCase(), 
+        status: formData.status || user.status?.toUpperCase(), 
+        contactNum: formData.phoneNumber,
+        user_address: formData.address,
+        username: formData.username
       };
 
-      const response = await fetch(`http://localhost:3000/api/customers/${user.id}`, {
+      const response = await fetch(`http://localhost:3000/api/auth/edit-user/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

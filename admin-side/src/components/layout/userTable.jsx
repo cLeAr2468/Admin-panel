@@ -31,54 +31,6 @@ const UserTable = ({ embedded = false }) => {
   const [users, setUsers] = useState([]);
   const navigate = useNavigate();
 
-  // Static data commented out - now using API
-  /*
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@email.com",
-      role: "admin",
-      status: "active",
-      dateRegistered: "9/11/2025",
-      registerdby: "admin",
-      firstName: "John",
-      lastName: "Doe",
-      phoneNumber: "+1234567890",
-      address: "123 Main St",
-      username: "johndoe"
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@email.com",
-      role: "staff",
-      status: "active",
-      dateRegistered: "9/10/2025",
-      registerdby: "admin",
-      firstName: "Jane",
-      lastName: "Smith",
-      phoneNumber: "+1234567891",
-      address: "456 Oak Ave",
-      username: "janesmith"
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike.j@email.com",
-      role: "Customer",
-      status: "inactive",
-      dateRegistered: "9/9/2025",
-      registerdby: "admin",
-      firstName: "Mike",
-      lastName: "Johnson",
-      phoneNumber: "+1234567892",
-      address: "789 Pine Rd",
-      username: "mikej"
-    }
-  ]);
-  */
-
   // Fetch users from API
   useEffect(() => {
     const fetchUsers = async () => {
@@ -101,7 +53,9 @@ const UserTable = ({ embedded = false }) => {
         const results = await userResponse.json();
         console.log("API response:", results);
         
-        const formattedUsers = results.data.map(user => {
+        const adminUsers = results.data.filter(user => user.registered_by === "Admin");
+        
+        const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
           const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
           return {
@@ -135,7 +89,7 @@ const UserTable = ({ embedded = false }) => {
     fetchUsers();
 
     // Fetch every 5 seconds
-    const interval = setInterval(fetchUsers, 5000);
+    const interval = setInterval(fetchUsers, 30000);
     return () => clearInterval(interval); // cleanup on unmount
   }, []);
 
