@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { Toaster as SonnerToaster } from 'sonner';
 import Header from './components/layout/header';
 import Home from './components/layout/home';
 import About from './components/layout/about';
@@ -15,11 +14,6 @@ import Inventory from './components/layout/Inventory';
 import Reports from './components/layout/Reports';
 import UserTable from './components/layout/userTable';
 import Custb from './components/layout/Custb';
-import ManagePrice from './components/layout/ManagePrice';
-import ManageServices from './components/layout/ManageServices';
-import ManageAbout from './components/layout/ManageAbout';
-import PaymentMethod from './components/layout/PaymentMethod';
-
 function AppContent() {
   const location = useLocation();
 
@@ -33,10 +27,6 @@ function AppContent() {
     '/reports',
     '/userTable',
     '/Custb',
-    '/manage-price',
-    '/manage-services',
-    '/manage-about',
-    '/payment',
   ];
 
   // Check if current path should hide header
@@ -62,10 +52,6 @@ function AppContent() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/userTable" element={<UserTable />} />
           <Route path="/Custb" element={<Custb />} />
-          <Route path="/manage-price" element={<ManagePrice />} />
-          <Route path="/manage-services" element={<ManageServices />} />
-          <Route path="/manage-about" element={<ManageAbout />} />
-          <Route path="/payment" element={<PaymentMethod />} />
         </Routes>
       </div>
     </div>
@@ -76,7 +62,6 @@ function App() {
   return (
     <Router>
       <Toaster position="top-right" />
-      <SonnerToaster position="top-right" richColors />
       <AppContent />
     </Router>
   );

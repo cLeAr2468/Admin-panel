@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Menu, BarChart3, Users, Package, FileText, CreditCard, DollarSign, Info, Wrench, LogOut } from 'lucide-react';
+import { ArrowLeft, Menu, BarChart3, Users, Package, FileText, CreditCard, LogOut } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 
@@ -13,9 +13,6 @@ const Sidebar = () => {
     { name: 'CUSTOMER', icon: Users, path: '/customer' },
     { name: 'INVENTORY', icon: Package, path: '/inventory' },
     { name: 'REPORTS', icon: FileText, path: '/reports' },
-    { name: 'MANAGE PRICE', icon: DollarSign, path: '/manage-price' },
-    { name: 'MANAGE SERVICES', icon: Wrench, path: '/manage-services' },
-    { name: 'MANAGE ABOUT', icon: Info, path: '/manage-about' },
     { name: 'PAYMENT METHOD', icon: CreditCard, path: '/payment' },
     { name: 'LOG OUT', icon: LogOut, path: '/logout' },
   ];
