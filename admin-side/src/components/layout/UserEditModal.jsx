@@ -9,6 +9,7 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    middleName: "",
     username: "",
     email: "",
     role: "",
@@ -16,36 +17,100 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
     address: "",
     phoneNumber: "",
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
 
   useEffect(() => {
-    if (user) {
-      const nameParts = user.name.split(", ");
-      const lastName = nameParts[0] || "";
-      const firstName = nameParts[1] || "";
+    const fetchUserData = async () => {
+      if (!user || !user.id) return;
+      
+      try {
+        setIsLoading(true);
+        // Fetch all users and find the specific user by ID
+        const response = await fetch('http://localhost:3000/api/auth/users', {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': localStorage.getItem('token')
+          },
+          credentials: 'include'
+        });
 
-      const formattedRole = user.role?.toUpperCase() || "";
-      const formattedStatus = user.status?.toUpperCase() || "";
+        if (!response.ok) {
+          throw new Error("Failed to fetch user data");
+        }
 
-      const updatedFormData = {
-        firstName,
-        lastName,
-        username: user.username || "",
-        email: user.email || "",
-        role: formattedRole,
-        status: formattedStatus,
-        address: user.address || "",
-        phoneNumber: user.phoneNumber || "",
-      };
+        const result = await response.json();
+        const userData = result.data.find(u => u.user_id === user.id);
 
-      setFormData(updatedFormData);
-      setSelectedRole(formattedRole);
-      setSelectedStatus(formattedStatus);
+        if (!userData) {
+          throw new Error("User not found");
+        }
 
-      console.log('Initial form data:', updatedFormData);
-    }
+        // Format role: all uppercase (CUSTOMER, STAFF)
+        const formattedRole = userData.role?.toUpperCase() || "";
+        
+        // Format status: first letter uppercase, rest lowercase (Active, Inactive, Pending)
+        const formattedStatus = userData.status 
+          ? userData.status.charAt(0).toUpperCase() + userData.status.slice(1).toLowerCase()
+          : "";
+
+        const updatedFormData = {
+          firstName: userData.user_fName || "",
+          lastName: userData.user_lName || "",
+          middleName: userData.user_mName && userData.user_mName !== "null" ? userData.user_mName : "",
+          username: userData.username || "",
+          email: userData.email || "",
+          role: formattedRole,
+          status: formattedStatus,
+          address: userData.user_address || "",
+          phoneNumber: userData.contactNum || "",
+        };
+
+        setFormData(updatedFormData);
+        setSelectedRole(formattedRole);
+        setSelectedStatus(formattedStatus);
+
+        console.log('Fetched user data:', updatedFormData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Failed to load user data');
+        // Fallback to user prop data if API fails
+        const nameParts = user.name?.split(", ") || [];
+        const lastName = nameParts[0] || "";
+        const firstAndMiddle = nameParts[1] || "";
+        const nameParts2 = firstAndMiddle.split(" ");
+        const firstName = nameParts2[0] || "";
+        const middleName = nameParts2.length > 1 ? nameParts2.slice(1).join(" ") : (user.middleName || "");
+
+        const formattedRole = user.role?.toUpperCase() || "";
+        const formattedStatus = user.status 
+          ? user.status.charAt(0).toUpperCase() + user.status.slice(1).toLowerCase()
+          : "";
+
+        const fallbackFormData = {
+          firstName,
+          lastName,
+          middleName,
+          username: user.username || "",
+          email: user.email || "",
+          role: formattedRole,
+          status: formattedStatus,
+          address: user.address || "",
+          phoneNumber: user.phoneNumber || user.contact || "",
+        };
+
+        setFormData(fallbackFormData);
+        setSelectedRole(formattedRole);
+        setSelectedStatus(formattedStatus);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, [user]);
 
   const handleChange = (event) => {
@@ -61,18 +126,29 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
     event.preventDefault();
 
     try {
+      // Ensure role is all uppercase (CUSTOMER, STAFF, ADMIN)
+      const roleValue = formData.role ? formData.role.toUpperCase() : (user.role ? user.role.toUpperCase() : '');
+      
+      // Ensure status has first letter capitalized (Active, Inactive, Pending)
+      const statusValue = formData.status 
+        ? formData.status.charAt(0).toUpperCase() + formData.status.slice(1).toLowerCase()
+        : (user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1).toLowerCase() : '');
+
       const updatePayload = {
-        cus_fName: formData.firstName,
-        cus_lName: formData.lastName,
-        cus_eMail: formData.email,
-        cus_role: formData.role || user.role?.toUpperCase(), 
-        cus_status: formData.status || user.status?.toUpperCase(), 
-        cus_phoneNum: formData.phoneNumber,
-        cus_address: formData.address,
-        cus_username: formData.username
+        user_fName: formData.firstName,
+        user_lName: formData.lastName,
+        user_mName: formData.middleName || null,
+        user_eMail: formData.email,
+        role: roleValue, 
+        status: statusValue, 
+        contactNum: formData.phoneNumber,
+        user_address: formData.address,
+        username: formData.username
       };
 
-      const response = await fetch(`http://localhost:3000/api/customers/${user.id}`, {
+      console.log('Sending update payload:', updatePayload);
+
+      const response = await fetch(`http://localhost:3000/api/auth/edit-user/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -86,18 +162,22 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
         throw new Error(result.message || 'Failed to update customer');
       }
 
+      const middleNameDisplay = formData.middleName ? ` ${formData.middleName}` : "";
       const updatedUser = {
         id: user.id,
-        name: `${formData.lastName}, ${formData.firstName}`,
+        name: `${formData.lastName}, ${formData.firstName}${middleNameDisplay}`,
         username: formData.username,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         address: formData.address,
-        role: formData.role || user.role?.toUpperCase(), 
-        status: formData.status || user.status?.toUpperCase(),
+        role: roleValue, 
+        status: statusValue,
         dateRegistered: user.dateRegistered,
         registerdby: user.registerdby,
-        registeredAt: user.registeredAt
+        registeredAt: user.registeredAt,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        middleName: formData.middleName
       };
 
       onUpdate(updatedUser);
@@ -109,9 +189,21 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg p-8">
+          <div className="text-center">
+            <p className="text-slate-800 text-lg">Loading user data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg">
+      <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg max-h-[90vh] overflow-y-auto">
         <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
           <h2 className="text-2xl font-bold text-slate-800">Edit User</h2>
           <Button
@@ -127,7 +219,7 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
         <div className="p-6 pt-2">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
                   First Name *
@@ -138,6 +230,19 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
                   onChange={handleChange}
                   placeholder="Enter first name"
                   required
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Middle Name
+                </label>
+                <Input
+                  name="middleName"
+                  value={formData.middleName}
+                  onChange={handleChange}
+                  placeholder="Enter middle name"
                   className="w-full"
                 />
               </div>
@@ -234,9 +339,7 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select role">
-                      {formData.role || "Select role"}
-                    </SelectValue>
+                    <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="STAFF">STAFF</SelectItem>
@@ -257,13 +360,12 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select status">
-                      {formData.status}
-                    </SelectValue>
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                    <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
