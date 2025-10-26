@@ -56,7 +56,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
             {
               user_fName: formData.cus_fName,
               user_lName: formData.cus_lName,
-              user_mName: formData.cus_mName || null,
+              user_mName: formData.cus_mName,
               user_address: formData.cus_address,
               username: formData.cus_username || `${formData.cus_lName}.${formData.cus_fName}`.toLowerCase(),
               contactNum: formData.cus_phoneNum,
@@ -79,13 +79,15 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
       setFormData({
         cus_fName: "",
         cus_lName: "",
+        cus_mName: "",
         cus_eMail: "",
+        cus_role: "CUSTOMER",
         cus_phoneNum: "",
         cus_address: "",
         cus_username: "",
         password: "",
         confirmPassword: "",
-        registeredBy: ""
+        registeredBy: registeredBy
       });
 
       if (onSave) {
@@ -101,35 +103,22 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
     }
   };
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-  //   if (onSave) {
-  //     onSave(formData);
-  //   }
-  //   console.log('Customer data:', formData);
-  //   // Here you would typically send the data to your backend
-  // };
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-2xl font-bold text-slate-800">
-            Customer Registration
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
+      <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg">
+        <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-4">
+          <h2 className="text-2xl font-bold text-slate-800">Customer Registration</h2>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
 
-        <CardContent>
+        <div className="p-6 pt-0">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -145,7 +134,6 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
                   className="w-full"
                 />
               </div>
-
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
                   Last Name *
@@ -155,6 +143,35 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
                   value={formData.cus_lName}
                   onChange={handleInputChange}
                   placeholder="Enter last name"
+                  required
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Middle Name *
+                </label>
+                <Input
+                  name="cus_mName"
+                  value={formData.cus_mName}
+                  onChange={handleInputChange}
+                  placeholder="Enter middle name"
+                  required
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Username *
+                </label>
+                <Input
+                  name="cus_username"
+                  value={formData.cus_username}
+                  onChange={handleInputChange}
+                  placeholder="Enter username"
                   required
                   className="w-full"
                 />
@@ -176,10 +193,9 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
                   className="w-full"
                 />
               </div>
-
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  Phone *
+                  Phone Number *
                 </label>
                 <Input
                   name="cus_phoneNum"
@@ -202,20 +218,6 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
                 value={formData.cus_address}
                 onChange={handleInputChange}
                 placeholder="Enter address"
-                required
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                Username *
-              </label>
-              <Input
-                name="cus_username"
-                value={formData.cus_username}
-                onChange={handleInputChange}
-                placeholder="Enter username"
                 required
                 className="w-full"
               />
@@ -271,8 +273,8 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
