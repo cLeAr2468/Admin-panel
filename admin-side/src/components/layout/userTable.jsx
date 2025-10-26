@@ -31,7 +31,6 @@ const UserTable = ({ embedded = false }) => {
   const [users, setUsers] = useState([]);
   const navigate = useNavigate();
 
-  // Fetch users from API
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -53,9 +52,7 @@ const UserTable = ({ embedded = false }) => {
         const results = await userResponse.json();
         console.log("API response:", results);
         
-        const adminUsers = results.data.filter(user => user.registered_by === "Admin");
-        
-        const formattedUsers = adminUsers.map(user => {
+        const formattedUsers = results.data.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
           const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
           return {
@@ -89,7 +86,7 @@ const UserTable = ({ embedded = false }) => {
     fetchUsers();
 
     // Fetch every 5 seconds
-    const interval = setInterval(fetchUsers, 30000);
+    const interval = setInterval(fetchUsers, 5000);
     return () => clearInterval(interval); // cleanup on unmount
   }, []);
 
@@ -541,13 +538,14 @@ const UserTable = ({ embedded = false }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Middle Name
+                        Middle Name *
                       </label>
                       <Input
                         name="middleName"
                         value={formData.middleName}
                         onChange={handleChange}
-                        placeholder="Enter middle name (optional)"
+                        placeholder="Enter middle name"
+                        required
                         className="w-full"
                       />
                     </div>
@@ -651,8 +649,8 @@ const UserTable = ({ embedded = false }) => {
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="customer">Customer</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
+                        <SelectItem value="customer">CUSTOMER</SelectItem>
+                        <SelectItem value="staff">STAFF</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

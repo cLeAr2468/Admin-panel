@@ -26,68 +26,6 @@ const Custb = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [users, setUsers] = useState([]);
-
-  // Static data commented out - now using API
-  /*
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@email.com",
-      role: "Customer",
-      status: "active",
-      dateRegistered: "9/11/2025",
-      registerdby: "customer"
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@email.com",
-      role: "Customer",
-      status: "active",
-      dateRegistered: "9/10/2025",
-      registerdby: "customer"
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike.j@email.com",
-      role: "Customer",
-      status: "inactive",
-      dateRegistered: "9/9/2025",
-      registerdby: "customer"
-    },
-    {
-      id: 4,
-      name: "Sarah Wilson",
-      email: "sarah.w@email.com",
-      role: "Customer",
-      status: "active",
-      dateRegistered: "9/8/2025",
-      registerdby: "customer"
-    },
-    {
-      id: 5,
-      name: "Alex Brown",
-      email: "alex.b@email.com",
-      role: "Customer",
-      status: "pending",
-      dateRegistered: "9/7/2025",
-      registerdby: "customer"
-    },
-     {
-      id: 6,
-      name: "James Brown",
-      email: "James.b@email.com",
-      role: "Customer",
-      status: "pending",
-      dateRegistered: "9/7/2025",
-      registerdby: "customer"
-    }
-  ]);
-  */
-
-  // Fetch customers from API
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -288,56 +226,56 @@ const Custb = ({ embedded = false }) => {
           </div>
         )}
 
-        {/* Search and Filters Section */}
+        {/* Search and Filters Section - Hidden when viewing user info */}
+        {!showUserInfo && (
+          <div className={`flex flex-col md:flex-row justify-between items-center gap-4 ${embedded ? 'p-2' : 'px-4 py-4'}`}>
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="relative w-full md:w-[300px]">
+                <Input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  className="pl-8"
+                />
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
 
-        <div className={`flex flex-col md:flex-row justify-between items-center gap-4 ${embedded ? 'p-2' : 'px-4 py-4'}`}>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <div className="relative w-full md:w-[300px]">
-              <Input
-                type="text"
-                placeholder="Search by name or email..."
-                className="pl-8"
-              />
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Select time range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="weekly">This week</SelectItem>
+                  <SelectItem value="monthly">This month</SelectItem>
+                  <SelectItem value="yearly">This year</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All status</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {!embedded && (
+                <Button
+                  variant="default"
+                  className="bg-[#126280] hover:bg-[#126280]/80"
+                  onClick={() => navigate('/dashboard/register')}
+                >
+                  Add New User
+                </Button>
+              )}
             </div>
           </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-full md:w-[150px]">
-                <SelectValue placeholder="Select time range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All time</SelectItem>
-                <SelectItem value="weekly">This week</SelectItem>
-                <SelectItem value="monthly">This month</SelectItem>
-                <SelectItem value="yearly">This year</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[150px]">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {!embedded && (
-              <Button
-                variant="default"
-                className="bg-[#126280] hover:bg-[#126280]/80"
-                onClick={() => navigate('/dashboard/register')}
-              >
-                Add New User
-              </Button>
-            )}
-          </div>
-        </div>
-        
+        )}
 
         {/* Content Section */}
         <div className={embedded ? "p-0" : "px-4 pb-6"}>
