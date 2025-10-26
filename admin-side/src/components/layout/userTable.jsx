@@ -52,7 +52,8 @@ const UserTable = ({ embedded = false }) => {
         const results = await userResponse.json();
         console.log("API response:", results);
         
-        const formattedUsers = results.data.map(user => {
+        const adminUsers = results.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" );
+        const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
           const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
           return {
@@ -86,7 +87,7 @@ const UserTable = ({ embedded = false }) => {
     fetchUsers();
 
     // Fetch every 5 seconds
-    const interval = setInterval(fetchUsers, 5000);
+    const interval = setInterval(fetchUsers, 30000);
     return () => clearInterval(interval); // cleanup on unmount
   }, []);
 
@@ -142,7 +143,7 @@ const UserTable = ({ embedded = false }) => {
             contactNum: formData.phoneNumber,
             email: formData.email,
             role: formData.role,
-            status: "active",
+            status: "Active",
             password: formData.password,
           }),
         }
@@ -176,7 +177,8 @@ const UserTable = ({ embedded = false }) => {
         });
         if (userResponse.ok) {
           const results = await userResponse.json();
-          const formattedUsers = results.data.map(user => {
+          const adminUsers = results.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" );
+          const formattedUsers = adminUsers.map(user => {
             const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
             const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
             return {
