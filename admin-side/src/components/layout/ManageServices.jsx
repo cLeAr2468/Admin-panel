@@ -129,14 +129,6 @@ const ManageServices = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Are you sure you want to delete this service?")) {
-      return;
-    }
-
-    setServices(services.filter(s => s.id !== id));
-    toast.success("Service deleted successfully");
-  };
 
   const handleToggleSelection = (serviceId) => {
     if (tempSelectedServices.includes(serviceId)) {
@@ -210,15 +202,7 @@ const ManageServices = () => {
               </Button>
               <h1 className="text-3xl font-bold text-[#126280]">Manage Services</h1>
             </div>
-            <Button
-              onClick={() => setShowServiceDialog(true)}
-              className="bg-[#126280] hover:bg-[#126280]/80"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              View Content
-            </Button>
           </div>
-
           {/* Services Section */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-6">
@@ -356,18 +340,6 @@ const ManageServices = () => {
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(service.id);
-                              }}
-                              className="flex-1 text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </Button>
                           </div>
                         )}
                       </div>
@@ -381,55 +353,6 @@ const ManageServices = () => {
         </div>
       </div>
 
-      {/* View Service Content Dialog */}
-      {showServiceDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-4xl bg-white shadow-2xl rounded-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b bg-[#0B6B87]">
-              <h2 className="text-2xl font-bold text-white">Services Content</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowServiceDialog(false)}
-                className="text-white hover:bg-white/20"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <div className="p-8">
-              <h1 className="text-4xl font-bold text-[#0B6B87] mb-8">Our Services</h1>
-
-              {/* Services */}
-              <div className="space-y-6">
-                {services.filter(s => s.isDisplayed !== false).map((service) => (
-                  <div key={service.id} className="flex items-start gap-4 p-6 bg-gray-50 rounded-lg">
-                    <CheckCircle className="h-6 w-6 text-[#0B6B87] flex-shrink-0 mt-1" />
-                    <div>
-                      <h3 className="font-bold text-xl text-[#0B6B87] mb-2">
-                        {service.title}
-                      </h3>
-                      <p className="text-gray-600 leading-relaxed">
-                        {service.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Close Button */}
-              <div className="flex justify-end mt-8 pt-6 border-t">
-                <Button
-                  onClick={() => setShowServiceDialog(false)}
-                  className="bg-[#0B6B87] hover:bg-[#0B6B87]/90"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add/Edit Service Dialog */}
       {isDialogOpen && (
