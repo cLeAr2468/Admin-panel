@@ -137,14 +137,7 @@ const ManageAbout = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteFeature = (id) => {
-    if (!window.confirm("Are you sure you want to delete this feature?")) {
-      return;
-    }
-
-    setFeatures(features.filter(f => f.id !== id));
-    toast.success("Feature deleted successfully");
-  };
+  
 
   const handleToggleSelection = (featureId) => {
     if (tempSelectedFeatures.includes(featureId)) {
@@ -221,13 +214,7 @@ const ManageAbout = () => {
               </Button>
               <h1 className="text-3xl font-bold text-[#126280]">About Us</h1>
             </div>
-            <Button
-              onClick={() => setShowAboutDialog(true)}
-              className="bg-[#126280] hover:bg-[#126280]/80"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              View Content
-            </Button>
+            {/* View Content button removed */}
           </div>
 
           {/* Features Section */}
@@ -353,18 +340,6 @@ const ManageAbout = () => {
                           >
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteFeature(feature.id);
-                            }}
-                            className="flex-1 text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
                           </Button>
                         </div>
                       )}

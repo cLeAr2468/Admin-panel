@@ -142,14 +142,7 @@ const ManagePrice = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Are you sure you want to delete this price?")) {
-      return;
-    }
 
-    setPrices(prices.filter(p => p.id !== id));
-    toast.success("Price deleted successfully");
-  };
 
   const handleToggleSelection = (priceId) => {
     if (tempSelectedPrices.includes(priceId)) {
@@ -225,13 +218,7 @@ const ManagePrice = () => {
               </Button>
               <h1 className="text-3xl font-bold text-[#126280]">Manage Prices</h1>
             </div>
-            <Button
-              onClick={() => setShowPriceDialog(true)}
-              className="bg-[#126280] hover:bg-[#126280]/80"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              View Content
-            </Button>
+
           </div>
 
           {/* Prices Section */}
@@ -377,18 +364,6 @@ const ManagePrice = () => {
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(price.id);
-                              }}
-                              className="flex-1 text-red-600 border-red-600 hover:bg--600 hover:text-white"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </Button>
                           </div>
                         )}
                       </div>
@@ -402,69 +377,7 @@ const ManagePrice = () => {
         </div>
       </div>
 
-      {/* View Price Content Dialog */}
-      {showPriceDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-4xl bg-white shadow-2xl rounded-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b bg-[#0B6B87]">
-              <h2 className="text-2xl font-bold text-white">Price List Content</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowPriceDialog(false)}
-                className="text-white hover:bg-white/20"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
 
-            <div className="p-8">
-              <h1 className="text-4xl font-bold text-[#0B6B87] mb-8">Our Pricing</h1>
-
-              {/* Prices Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {prices.filter(p => p.isDisplayed !== false).map((price) => (
-                  <div key={price.id} className="bg-white border-2 border-[#0B6B87] rounded-lg overflow-hidden">
-                    {price.image_url && (
-                      <div className="h-40 bg-gray-200">
-                        <img
-                          src={price.image_url}
-                          alt={price.category}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="p-6 text-center">
-                      <h3 className="text-xl font-bold text-[#0B6B87] mb-2">
-                        {price.category}
-                      </h3>
-                      {price.description && (
-                        <p className="text-sm text-gray-600 mb-4">{price.description}</p>
-                      )}
-                      <div className="flex items-baseline justify-center gap-2">
-                        <span className="text-4xl font-bold text-[#0B6B87]">
-                          ₱{price.price}
-                        </span>
-                        <span className="text-sm text-gray-500">{price.unit}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Close Button */}
-              <div className="flex justify-end mt-8 pt-6 border-t">
-                <Button
-                  onClick={() => setShowPriceDialog(false)}
-                  className="bg-[#0B6B87] hover:bg-[#0B6B87]/90"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add/Edit Price Dialog */}
       {isDialogOpen && (

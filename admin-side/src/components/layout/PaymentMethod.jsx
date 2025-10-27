@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Save, Eye, CheckCircle, CreditCard, Upload, Banknote } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, X, Save, CheckCircle, CreditCard, Upload, Banknote } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
 
@@ -41,21 +41,11 @@ const PaymentMethod = () => {
       isStatic: false,
       qrCodeImage: null,
     },
-    {
-      id: 4,
-      name: "Bank Transfer",
-      accountName: "Laundry Shop Business",
-      accountNumber: "1234567890",
-      description: "BDO - Account Number",
-      isDisplayed: true,
-      isStatic: false,
-      qrCodeImage: null,
-    },
+    // Bank Transfer removed per request
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [tempSelectedMethods, setTempSelectedMethods] = useState([]);
   
@@ -222,20 +212,6 @@ const PaymentMethod = () => {
     setTempSelectedMethods([]);
   };
 
-  const openAddDialog = () => {
-    setFormData({
-      name: "",
-      accountName: "",
-      accountNumber: "",
-      description: "",
-      isDisplayed: true,
-      qrCodeImage: null,
-    });
-    setQrCodePreview(null);
-    setIsEditMode(false);
-    setSelectedMethod(null);
-    setIsDialogOpen(true);
-  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -256,13 +232,7 @@ const PaymentMethod = () => {
               </Button>
               <h1 className="text-3xl font-bold text-[#126280]">Payment Methods</h1>
             </div>
-            <Button
-              onClick={() => setShowPaymentDialog(true)}
-              className="bg-[#126280] hover:bg-[#126280]/80"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              View Content
-            </Button>
+            {/* View Content button removed */}
           </div>
 
           {/* Payment Methods Section */}
@@ -302,13 +272,6 @@ const PaymentMethod = () => {
                       className="border-[#0B6B87] text-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
                     >
                       Select 3 to Display
-                    </Button>
-                    <Button
-                      onClick={openAddDialog}
-                      className="bg-[#0B6B87] hover:bg-[#0B6B87]/90 text-white"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Payment Method
                     </Button>
                   </>
                 )}
@@ -399,7 +362,7 @@ const PaymentMethod = () => {
                         </div>
                       </div>
                       
-                      {!isSelectionMode && (
+                      {!isSelectionMode && method.name !== 'Cash' && (
                         <div className="flex gap-3 mt-4">
                           <Button
                             variant="outline"
@@ -408,25 +371,25 @@ const PaymentMethod = () => {
                               e.stopPropagation();
                               handleEdit(method);
                             }}
-                            className={`flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white ${method.isStatic ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={method.isStatic}
+                            className="flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
                           >
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(method.id);
-                            }}
-                            className={`flex-1 text-red-600 border-red-600 hover:bg-red-600 hover:text-white ${method.isStatic ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={method.isStatic}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </Button>
+                          {method.name !== 'GCash' && method.name !== 'PayMaya' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(method.id);
+                              }}
+                              className="flex-1 text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </Button>
+                          )}
                         </div>
                       )}
                     </CardContent>
@@ -439,78 +402,7 @@ const PaymentMethod = () => {
         </div>
       </div>
 
-      {/* View Payment Methods Content Dialog */}
-      {showPaymentDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-4xl bg-white shadow-2xl rounded-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b bg-[#0B6B87]">
-              <h2 className="text-2xl font-bold text-white">Payment Methods</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowPaymentDialog(false)}
-                className="text-white hover:bg-white/20"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <div className="p-8">
-              <h1 className="text-4xl font-bold text-[#0B6B87] mb-4">Payment Options</h1>
-              <p className="text-gray-600 mb-8">Choose your preferred payment method below</p>
-
-              {/* Payment Methods */}
-              <div className="space-y-6">
-                {paymentMethods.filter(m => m.isDisplayed !== false).map((method) => (
-                  <div key={method.id} className="flex items-start gap-4 p-6 bg-gray-50 rounded-lg border-2 border-[#0B6B87]">
-                    {method.name === "Cash" ? (
-                      <Banknote className="h-8 w-8 text-[#0B6B87] flex-shrink-0 mt-1" />
-                    ) : (
-                      <CreditCard className="h-8 w-8 text-[#0B6B87] flex-shrink-0 mt-1" />
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-bold text-2xl text-[#0B6B87] mb-3">
-                        {method.name}
-                      </h3>
-                      <div className="space-y-2 text-gray-700">
-                        <p className="text-lg">
-                          <span className="font-semibold">Account Name:</span> {method.accountName}
-                        </p>
-                        <p className="text-lg">
-                          <span className="font-semibold">Account Number:</span> {method.accountNumber}
-                        </p>
-                        {method.description && !method.qrCodeImage && (
-                          <p className="text-gray-600 mt-3">{method.description}</p>
-                        )}
-                        {method.qrCodeImage && (
-                          <div className="mt-4">
-                            <p className="font-semibold mb-3 text-lg">QR Code:</p>
-                            <img 
-                              src={method.qrCodeImage} 
-                              alt="Payment QR Code" 
-                              className="w-64 h-64 object-contain border-2 border-[#0B6B87] rounded-lg shadow-md"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Close Button */}
-              <div className="flex justify-end mt-8 pt-6 border-t">
-                <Button
-                  onClick={() => setShowPaymentDialog(false)}
-                  className="bg-[#0B6B87] hover:bg-[#0B6B87]/90"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* View Content feature removed */}
 
       {/* Add/Edit Payment Method Dialog */}
       {isDialogOpen && (
