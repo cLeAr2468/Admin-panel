@@ -3,7 +3,8 @@ import { ArrowLeft, Save, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
+import { fetchApi } from "@/lib/api";
 
 const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
   const [formData, setFormData] = useState({
@@ -45,8 +46,8 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
     }
 
     try {
-      const postData = await fetch(
-        'http://localhost:3000/api/auth/register-user',
+      const response = await fetchApi(
+        '/api/auth/register-user',
         {
           method: "POST",
           headers: {
@@ -70,10 +71,8 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
         }
       );
 
-      const result = await postData.json();
-
-      if (!postData.ok) {
-        throw new Error(result.message || "Failed to register customer");
+      if (response.success === false) {
+        throw new Error(response.message || "Failed to register customer");
       }
 
       setFormData({
@@ -91,7 +90,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
       });
 
       if (onSave) {
-        onSave(result);
+        onSave(response);
       }
 
       onClose();

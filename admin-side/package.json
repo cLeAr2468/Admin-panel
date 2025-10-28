@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:env": "node scripts/generateEnvExample.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -19,6 +20,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "input-otp": "^1.4.2",
     "lodash": "^4.17.21",
     "lucide-react": "^0.540.0",
