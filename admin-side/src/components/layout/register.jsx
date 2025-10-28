@@ -3,8 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { fetchApi } from "@/lib/api";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -40,7 +38,7 @@ const Register = () => {
         }
 
         try {
-            const response = await fetchApi('/api/auth/register-admin', {
+            const response = await fetch('http://localhost:3000/api/auth/register-admin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -57,15 +55,14 @@ const Register = () => {
                 })
             });
 
-            if (response.success) {
-                toast.success("Admin registered successfully");
+            const data = await response.json();
+
+            if (response.ok) {
                 navigate("/dashboard");
             } else {
-                toast.error(response.message || "Failed to register admin");
-                setError(response.message || "Registration failed");
+                setError(data.message || "Registration failed");
             }
         } catch (error) {
-            toast.error("Registration error: " + error.message);
             console.error("Registration error:", error);
             setError("Connection error. Please try again later.");
         }
