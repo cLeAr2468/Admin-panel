@@ -77,9 +77,8 @@ const UserTable = ({ embedded = false }) => {
 
     fetchUsers();
 
-    // Fetch every 5 seconds
     const interval = setInterval(fetchUsers, 30000);
-    return () => clearInterval(interval); // cleanup on unmount
+    return () => clearInterval(interval); 
   }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -117,7 +116,7 @@ const UserTable = ({ embedded = false }) => {
 
     try {
       setIsLoading(true);
-      // Match the payload structure exactly as in Postman
+
       const response = await fetchApi(
         '/api/auth/register-user',
         {
