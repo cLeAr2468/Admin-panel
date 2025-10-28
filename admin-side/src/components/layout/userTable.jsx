@@ -88,13 +88,23 @@ const UserTable = ({ embedded = false }) => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetchApi('/api/auth/users');
+        const userResponse = await fetch('http://localhost:3000/api/auth/users', {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': localStorage.getItem('token')
+          },
+          credentials: 'include'
+        });
 
-        if (!response.success || !response.data) {
+        if (!userResponse.ok) {
           throw new Error("Failed to fetch users");
         }
 
-        const adminUsers = response.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" );
+        const results = await userResponse.json();
+        console.log("API response:", results);
+        
+        const adminUsers = results.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" );
         const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
           const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
@@ -166,8 +176,8 @@ const UserTable = ({ embedded = false }) => {
 
     try {
       // Match the payload structure exactly as in Postman
-      const response = await fetchApi(
-        '/api/auth/register-user',
+      const response = await fetch(
+        'http://localhost:3000/api/auth/register-user',
         {
           method: "POST",
           headers: {
@@ -187,9 +197,9 @@ const UserTable = ({ embedded = false }) => {
         }
       );
 
+      const data = await response.json();
       
-      
-      if (response.success === true || response.success === "true" || response.message === "User registered successfully") {
+      if (response.ok) {
         toast.success("User registered successfully");
         setFormData({
           firstName: "",
@@ -205,10 +215,17 @@ const UserTable = ({ embedded = false }) => {
         });
         setIsDialogOpen(false);
         // Refresh user list
-        const response = await fetchApi('/api/auth/users');
-
-        if (response.success) {
-          const adminUsers = response.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" );
+        const userResponse = await fetch('http://localhost:3000/api/auth/users', {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': localStorage.getItem('token')
+          },
+          credentials: 'include'
+        });
+        if (userResponse.ok) {
+          const results = await userResponse.json();
+          const adminUsers = results.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" );
           const formattedUsers = adminUsers.map(user => {
             const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
             const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
@@ -233,13 +250,13 @@ const UserTable = ({ embedded = false }) => {
           setUsers(formattedUsers);
         }
       } else {
-        setError(response.message || "Failed to register user");
-        toast.error(response.message || "Failed to register user");
+        setError(data.message || "Failed to register user");
+        toast.error(data.message || "Failed to register user");
       }
     } catch (error) {
-      toast.error("Registration error: " + error.message);
       console.error("Registration error:", error);
-      setError("Registration error.");
+      setError("Connection error. Please try again later.");
+      toast.error("Connection error. Please try again later.");
     } finally {
       setIsLoading(false);
     }

@@ -22,7 +22,6 @@ import { Link, useNavigate } from "react-router-dom";
 import UserDetailsModal from "./UserDetailsModal";
 import UserEditModal from "./UserEditModal";
 import UserPersonalInfo from "./UserPersonalInfo";
-import { fetchApi } from "@/lib/api";
 
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,15 +33,23 @@ const UserTable = ({ embedded = false }) => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetchApi('/api/auth/users');
+        const userResponse = await fetch('http://localhost:3000/api/auth/users', {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'Authorization': localStorage.getItem('token')
+          },
+          credentials: 'include'
+        });
 
-        if (!response.success) {
+        if (!userResponse.ok) {
           throw new Error("Failed to fetch users");
         }
 
-        console.log("API response:", response);
+        const results = await userResponse.json();
+        console.log("API response:", results);
         
-        const adminUsers = response.data.filter(user => user.registered_by === "Customer");
+        const adminUsers = results.data.filter(user => user.registered_by === "Customer");
         
         const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
