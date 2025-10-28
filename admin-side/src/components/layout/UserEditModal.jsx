@@ -10,7 +10,6 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    middleName: "",
     username: "",
     email: "",
     role: "",
@@ -18,7 +17,6 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
     address: "",
     phoneNumber: "",
   });
-  const [isLoading, setIsLoading] = useState(true);
 
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -119,24 +117,15 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
     event.preventDefault();
 
     try {
-      // Ensure role is all uppercase (CUSTOMER, STAFF, ADMIN)
-      const roleValue = formData.role ? formData.role.toUpperCase() : (user.role ? user.role.toUpperCase() : '');
-      
-      // Ensure status has first letter capitalized (Active, Inactive, Pending)
-      const statusValue = formData.status 
-        ? formData.status.charAt(0).toUpperCase() + formData.status.slice(1).toLowerCase()
-        : (user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1).toLowerCase() : '');
-
       const updatePayload = {
-        user_fName: formData.firstName,
-        user_lName: formData.lastName,
-        user_mName: formData.middleName || null,
-        user_eMail: formData.email,
-        role: roleValue, 
-        status: statusValue, 
-        contactNum: formData.phoneNumber,
-        user_address: formData.address,
-        username: formData.username
+        cus_fName: formData.firstName,
+        cus_lName: formData.lastName,
+        cus_eMail: formData.email,
+        cus_role: formData.role || user.role?.toUpperCase(), 
+        cus_status: formData.status || user.status?.toUpperCase(), 
+        cus_phoneNum: formData.phoneNumber,
+        cus_address: formData.address,
+        cus_username: formData.username
       };
 
       console.log('Sending update payload:', updatePayload);
@@ -153,22 +142,18 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
         throw new Error(response.message || 'Failed to update customer');
       }
 
-      const middleNameDisplay = formData.middleName ? ` ${formData.middleName}` : "";
       const updatedUser = {
         id: user.id,
-        name: `${formData.lastName}, ${formData.firstName}${middleNameDisplay}`,
+        name: `${formData.lastName}, ${formData.firstName}`,
         username: formData.username,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         address: formData.address,
-        role: roleValue, 
-        status: statusValue,
+        role: formData.role || user.role?.toUpperCase(), 
+        status: formData.status || user.status?.toUpperCase(),
         dateRegistered: user.dateRegistered,
         registerdby: user.registerdby,
-        registeredAt: user.registeredAt,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        middleName: formData.middleName
+        registeredAt: user.registeredAt
       };
 
       onUpdate(updatedUser);
@@ -180,21 +165,9 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg p-8">
-          <div className="text-center">
-            <p className="text-slate-800 text-lg">Loading user data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-2xl mx-4 bg-[#cdebf3] shadow-2xl rounded-lg">
         <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
           <h2 className="text-2xl font-bold text-slate-800">Edit User</h2>
           <Button
@@ -210,7 +183,7 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
         <div className="p-6 pt-2">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
                   First Name *
@@ -221,19 +194,6 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
                   onChange={handleChange}
                   placeholder="Enter first name"
                   required
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  Middle Name
-                </label>
-                <Input
-                  name="middleName"
-                  value={formData.middleName}
-                  onChange={handleChange}
-                  placeholder="Enter middle name"
                   className="w-full"
                 />
               </div>
@@ -330,7 +290,9 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder="Select role">
+                      {formData.role || "Select role"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="STAFF">STAFF</SelectItem>
@@ -351,12 +313,13 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Select status">
+                      {formData.status}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                    <SelectItem value="INACTIVE">INACTIVE</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
