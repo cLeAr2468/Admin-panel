@@ -6,7 +6,8 @@ import { Input } from "../ui/input";
 import image from "../../../public/laundry-logo.jpg";
 import debounce from "lodash/debounce";
 import { format } from "date-fns";
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
+import { fetchApi } from "@/lib/api";
 
 const CustomerReceipt = ({ onClose }) => {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
@@ -43,27 +44,25 @@ const CustomerReceipt = ({ onClose }) => {
         return null;
       }
 
-      const response = await fetch(`http://localhost:3000/api/customers/${customerId}`);
+      const response = await fetchApi(`/api/customers/${customerId}`);
       
       if (response.status === 404) {
         toast.error('Customer not found');
         return null;
       }
       
-      if (!response.ok) {
+      if (response.success === false) {
         throw new Error(`Error: ${response.status}`);
       }
-
-      const result = await response.json();
       
       // Check if the response has the expected structure
-      if (!result.success || !result.data) {
+      if (!response.success || !response.data) {
         toast.error('Invalid response format');
         return null;
       }
 
       // Access the nested data object
-      const customerData = result.data;
+      const customerData = response.data;
       
       // Validate that the required fields exist
       if (!customerData.cus_fName || !customerData.cus_lName) {
@@ -211,7 +210,7 @@ const CustomerReceipt = ({ onClose }) => {
         total_amount: parseFloat(formData.totalAmount) || 0
       };
 
-      const response = await fetch('http://localhost:3000/api/customers/laundry-record', {
+      const response = await fetchApi('/api/customers/laundry-record', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -219,19 +218,17 @@ const CustomerReceipt = ({ onClose }) => {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
+      if (response.success === false) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response.success) {
         toast.success('Laundry record saved successfully!');
         // Clear form or close modal after successful submission
-        // onClose();
-        setLaundryId(result.laundryId);
+        onClose();
+        setLaundryId(response.laundryId);
       } else {
-        toast.error(result.message || 'Failed to save laundry record');
+        toast.error(response.message || 'Failed to save laundry record');
       }
 
     } catch (error) {
@@ -253,17 +250,15 @@ const CustomerReceipt = ({ onClose }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch("http://localhost:3000/api/customers");
+      const response = await fetchApi("/api/customers");
 
-      if (!response.ok) {
+      if (response.success === false) {
         throw new Error("Failed to fetch customers");
       }
 
-      const result = await response.json();
-
-      if (result.success && Array.isArray(result.data)) {
-        setCustomers(result.data);
-        setFilteredCustomers(result.data);
+      if (response.success && Array.isArray(response.data)) {
+        setCustomers(response.data);
+        setFilteredCustomers(response.data);
       } else {
         throw new Error("Invalid data format");
       }

@@ -21,6 +21,7 @@ import { ArrowLeft, Search, Eye, Pencil } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import UserEditModal from "./UserEditModal";
 import UserPersonalInfo from "./UserPersonalInfo";
+import { fetchApi } from "@/lib/api";
 
 const Custb = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -31,23 +32,15 @@ const Custb = ({ embedded = false }) => {
       try {
         setIsLoading(true);
         setError(null);
-        const userResponse = await fetch('http://localhost:3000/api/auth/users', {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            'Authorization': localStorage.getItem('token')
-          },
-          credentials: 'include'
-        });
+        const response = await fetchApi('/api/auth/users');
 
-        if (!userResponse.ok) {
+        if (!response.success) {
           throw new Error("Failed to fetch users");
         }
 
-        const results = await userResponse.json();
-        console.log("API response:", results);
+        console.log("API response:", response);
         
-        const adminUsers = results.data.filter(user => user.registered_by === "Customer");
+        const adminUsers = response.data.filter(user => user.registered_by === "Customer");
         
         const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;

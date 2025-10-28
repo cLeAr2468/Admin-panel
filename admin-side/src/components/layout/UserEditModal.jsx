@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Save } from "lucide-react";
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
+import { fetchApi } from "@/lib/api";
 
 const UserEditModal = ({ user, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -29,21 +30,13 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
       try {
         setIsLoading(true);
         // Fetch all users and find the specific user by ID
-        const response = await fetch('http://localhost:3000/api/auth/users', {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            'Authorization': localStorage.getItem('token')
-          },
-          credentials: 'include'
-        });
+        const response = await fetchApi('/api/auth/users');
 
-        if (!response.ok) {
+        if (response.success === false) {
           throw new Error("Failed to fetch user data");
         }
 
-        const result = await response.json();
-        const userData = result.data.find(u => u.user_id === user.id);
+        const userData = response.data.find(u => u.user_id === user.id);
 
         if (!userData) {
           throw new Error("User not found");
@@ -148,7 +141,7 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
 
       console.log('Sending update payload:', updatePayload);
 
-      const response = await fetch(`http://localhost:3000/api/auth/edit-user/${user.id}`, {
+      const response = await fetchApi(`/api/auth/edit-user/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -156,10 +149,8 @@ const UserEditModal = ({ user, onClose, onUpdate }) => {
         body: JSON.stringify(updatePayload)
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to update customer');
+      if (response.success === false) {
+        throw new Error(response.message || 'Failed to update customer');
       }
 
       const middleNameDisplay = formData.middleName ? ` ${formData.middleName}` : "";
