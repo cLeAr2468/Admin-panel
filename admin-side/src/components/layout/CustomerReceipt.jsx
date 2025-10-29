@@ -88,7 +88,7 @@ const CustomerReceipt = ({ onClose }) => {
     }));
     
     // Handle the cus_id field specially
-    if (name === 'cus_id' && value.trim() !== '') {
+    if (name === 'user_id' && value.trim() !== '') {
       try {
         // Add loading state if needed
         const customerData = await fetchCustomerData(value);
@@ -195,7 +195,7 @@ const CustomerReceipt = ({ onClose }) => {
     try {
       // Prepare the payload from formData
       const payload = {
-        cus_id: formData.cus_id,
+        userId: formData.cus_id,
         batch: formData.batch,
         shirts: parseInt(formData.shirts) || 0,
         pants: parseInt(formData.pants) || 0,
@@ -233,7 +233,7 @@ const CustomerReceipt = ({ onClose }) => {
 
     } catch (error) {
       console.error('Error submitting laundry record:', error);
-      toast.error('Failed to submit laundry record');
+      toast.error('Failed to submit laundry record! Try again');
     }
   };
 
@@ -250,7 +250,7 @@ const CustomerReceipt = ({ onClose }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetchApi("/api/customers");
+      const response = await fetchApi("/api/auth/users/search/");
 
       if (response.success === false) {
         throw new Error("Failed to fetch customers");
@@ -280,9 +280,9 @@ const CustomerReceipt = ({ onClose }) => {
       const searchTerm = query.toLowerCase();
       const filtered = customers.filter(
         (customer) =>
-          customer.cus_id.toLowerCase().includes(searchTerm) ||
-          customer.cus_fName.toLowerCase().includes(searchTerm) ||
-          customer.cus_lName.toLowerCase().includes(searchTerm)
+          customer.user_id.toLowerCase().includes(searchTerm) ||
+          customer.user_fName.toLowerCase().includes(searchTerm) ||
+          customer.user_lName.toLowerCase().includes(searchTerm)
       );
       setFilteredCustomers(filtered);
     }, 300),
@@ -296,11 +296,14 @@ const CustomerReceipt = ({ onClose }) => {
   const handleCustomerSelect = (customer) => {
     setFormData((prev) => ({
       ...prev,
-      cus_id: customer.cus_id,
-      name: `${customer.cus_fName} ${customer.cus_lName}`,
-      cus_phoneNum: customer.cus_phoneNum,
-      cus_address: customer.cus_address,
+      cus_id: customer.user_id,
+      name: `${customer.user_fName} ${customer.user_lName}`,
+      cus_phoneNum: customer.contactNum,
+      cus_address: customer.user_address,
     }));
+
+    setSearchQuery("");
+    setFilteredCustomers([]);
   };
 
   const today = new Date();
@@ -589,15 +592,15 @@ const CustomerReceipt = ({ onClose }) => {
                     ) : (
                       filteredCustomers.map((customer) => (
                         <tr
-                          key={customer.cus_id}
+                          key={customer.user_id}
                           onClick={() => handleCustomerSelect(customer)}
                           className="hover:bg-slate-50 cursor-pointer transition-colors"
                         >
                           <td className="px-4 py-2 text-sm text-slate-800">
-                            {customer.cus_id}
+                            {customer.user_id}
                           </td>
                           <td className="px-4 py-2 text-sm text-slate-800">
-                            {`${customer.cus_fName} ${customer.cus_lName}`}
+                            {`${customer.user_fName} ${customer.user_lName}`}
                           </td>
                         </tr>
                       ))
