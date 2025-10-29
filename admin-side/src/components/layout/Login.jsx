@@ -8,6 +8,9 @@ const Login = () => {
     const [username, setUsername] = useState("admin");
     const [password, setPassword] = useState("password");
     const [error, setError] = useState("");
+    const [showForgotModal, setShowForgotModal] = useState(false); // added for modal
+    const [forgotEmail, setForgotEmail] = useState(""); // email input for modal
+    const [forgotMessage, setForgotMessage] = useState(""); // feedback for modal
     const navigate = useNavigate();
 
     const handleLogin = (e) => {
@@ -21,6 +24,32 @@ const Login = () => {
         } else {
             setError("Invalid username or password. Use admin/password");
         }
+    };
+
+    // New: simple email validation
+    const isValidEmail = (email) => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
+
+    const handleForgotSubmit = (e) => {
+        e.preventDefault();
+        setForgotMessage("");
+        if (!forgotEmail.trim()) {
+            setForgotMessage("Please enter your email.");
+            return;
+        }
+        if (!isValidEmail(forgotEmail)) {
+            setForgotMessage("Please enter a valid email address.");
+            return;
+        }
+
+        // Simulate sending reset link (replace with API call as needed)
+        setForgotMessage("If an account exists for that email, a reset link has been sent.");
+        setTimeout(() => {
+            setShowForgotModal(false);
+            setForgotEmail("");
+            setForgotMessage("");
+        }, 2500);
     };
 
     return (
@@ -87,9 +116,13 @@ const Login = () => {
                                         />
                                     </div>
                                     <p className="text-sm md:text-md text-gray-600 mt-2 md:mt-4 text-right font-semibold">
-                                        <a href="/Forgotpassword" className="text-blue-600 hover:underline">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowForgotModal(true)}
+                                            className="text-blue-600 hover:underline focus:outline-none"
+                                        >
                                             Forgot password
-                                        </a>
+                                        </button>
                                     </p>
 
                                     <Button 
@@ -108,6 +141,57 @@ const Login = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Forgot Password Modal */}
+            {showForgotModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+                    <div className="w-full max-w-md">
+                        <Card className="shadow-lg">
+                            <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                    <h3 className="text-lg font-semibold">Forgot Password</h3>
+                                    <button
+                                        onClick={() => { setShowForgotModal(false); setForgotMessage(""); }}
+                                        aria-label="Close"
+                                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                <p className="text-sm text-gray-600 mt-2">Enter your email to receive a password reset link.</p>
+
+                                <form onSubmit={handleForgotSubmit} className="mt-4 space-y-3">
+                                    <Input
+                                        id="forgot-email"
+                                        type="email"
+                                        placeholder="Email address"
+                                        className="bg-gray-100 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 h-10"
+                                        value={forgotEmail}
+                                        onChange={(e) => setForgotEmail(e.target.value)}
+                                        required
+                                    />
+
+                                    {forgotMessage && (
+                                        <p className="text-sm text-center text-gray-700">
+                                            {forgotMessage}
+                                        </p>
+                                    )}
+
+                                    <div className="flex gap-2">
+                                        <Button type="submit" className="flex-1 bg-[#126280] hover:bg-[#126280]/90 text-white h-10">
+                                            Send Reset Link
+                                        </Button>
+                                        <Button type="button" onClick={() => { setShowForgotModal(false); setForgotMessage(""); }} className="flex-1 bg-gray-200 text-gray-800 h-10">
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

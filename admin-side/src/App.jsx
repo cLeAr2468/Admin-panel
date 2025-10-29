@@ -14,6 +14,7 @@ import Inventory from './components/layout/Inventory';
 import Reports from './components/layout/Reports';
 import UserTable from './components/layout/userTable';
 import Custb from './components/layout/Custb';
+import ResetPassword from './components/layout/resetPass';
 function AppContent() {
   const location = useLocation();
 
@@ -27,6 +28,7 @@ function AppContent() {
     '/reports',
     '/userTable',
     '/Custb',
+    '/resetPass',
   ];
 
   // Check if current path should hide header
@@ -43,6 +45,7 @@ function AppContent() {
           <Route path="/services" element={<Services />} />
           <Route path="/prices" element={<Prices />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/resetPass" element={<ResetPassword />} />
           
           {/* Protected Routes */}
           <Route path="/register" element={<Register />} />
