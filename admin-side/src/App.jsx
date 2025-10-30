@@ -19,6 +19,7 @@ import ManagePrice from './components/layout/ManagePrice';
 import ManageServices from './components/layout/ManageServices';
 import ManageAbout from './components/layout/ManageAbout';
 import PaymentMethod from './components/layout/PaymentMethod';
+import ResetPassword from './components/layout/ResetPassword';
 
 function AppContent() {
   const location = useLocation();
@@ -37,6 +38,7 @@ function AppContent() {
     '/manage-services',
     '/manage-about',
     '/payment',
+    '/reset-password',
   ];
 
   // Check if current path should hide header
@@ -53,7 +55,8 @@ function AppContent() {
           <Route path="/services" element={<Services />} />
           <Route path="/prices" element={<Prices />} />
           <Route path="/login" element={<Login />} />
-          
+          <Route path="/reset-password" element={<ResetPassword />} />
+
           {/* Protected Routes */}
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
