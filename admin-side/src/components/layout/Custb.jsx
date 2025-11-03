@@ -41,8 +41,7 @@ const Custb = ({ embedded = false }) => {
         }
 
         console.log("API response:", response);
-        
-        const adminUsers = response.data.filter(user => user.registered_by === "Customer" && user.shop_id === adminData.shop_id);
+        const adminUsers = response.data.filter(user => user.registered_by === "CUSTOMER" && user.shop_id === adminData.shop_id);
         const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
           const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
@@ -76,12 +75,6 @@ const Custb = ({ embedded = false }) => {
     };
 
     fetchUsers();
-
-    // Set up polling every 30 seconds
-    const interval = setInterval(fetchUsers, 30000);
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(interval);
   }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);

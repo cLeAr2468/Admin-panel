@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from './Sidebar';
 import ItemDetails from './ItemDetails';
 import {
@@ -22,6 +22,7 @@ import {
 import { Search, Eye, Pencil, Save, X, Plus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { fetchApi } from "@/lib/api";
+import { AuthContext } from '@/context/AuthContext';
 
 function Inventory() {
   const [timeRange, setTimeRange] = useState("all");
@@ -32,50 +33,62 @@ function Inventory() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({
     inventoryId: "",
+    shopId: "",
     itemName: "",
     description: "",
     quantity: "",
     unitPrice: "",
     reorderLevel: "",
   });
+  const { adminData } = useContext(AuthContext);
 
   // Static inventory data
   const [inventoryItems, setInventoryItems] = useState([
   ]);
 
-  useEffect(() => {
-    const fetchInventory = async () => {
-        try {
-          const response = await fetchApi('/api/auth/shop-inventory-items');
 
-          if (response.success === false) {
-            throw new Error(`Error fetching inventory items: ${response.message}`);
-          }
+useEffect(() => {
+  const fetchInventory = async () => {
+    try {
+     
+      if (!adminData) {
+        console.log('Waiting for admin data...');
+        return;
+      }
 
-          const items = response.data.map(item => {
-            return {
-              id: item.item_id,
-              itemName: item.item_name,
-              description: item.item_description,
-              quantity: parseInt(item.item_quantity, 10),
-              unitPrice: parseFloat(item.item_uPrice),
-              reorderLevel: parseFloat(item.item_reoderLevel, 10),
-              dateAdded: item.date_added
-            };
-          });
-          console.log('Fetched inventory items:', items);
-          setInventoryItems(items);
-        } catch (error) {
-          console.error('Failed to fetch inventory items:', error);
-          setInventoryItems([]);
-        } finally {
-          //Loading false
-        }
+      const response = await fetchApi('/api/auth/shop-inventory-items');
+      
+      console.log('Admin shop ID:', adminData.shop_id);
+
+      if (response.success === false) {
+        throw new Error(`Error fetching inventory items: ${response.message}`);
+      }
+      
+      const filteredItems = response.data.filter(item => item.shop_id === adminData.shop_id);
+      
+      const items = filteredItems.map(item => {
+        return {
+          id: item.item_id,
+          shopId: item.shop_id,
+          itemName: item.item_name,
+          description: item.item_description,
+          quantity: parseInt(item.item_quantity, 10),
+          unitPrice: parseFloat(item.item_uPrice),
+          reorderLevel: parseFloat(item.item_reoderLevel, 10),
+          dateAdded: item.date_added
+        };
+      });
+
+      console.log('Fetched inventory items:', items);
+      setInventoryItems(items);
+    } catch (error) {
+      console.error('Failed to fetch inventory items:', error);
+      setInventoryItems([]);
     }
+  };
 
-    fetchInventory();
-    
-  }, []);
+  fetchInventory();
+}, [adminData]); 
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -101,7 +114,7 @@ function Inventory() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      shop_id: "00001",
+      shop_id: adminData.shop_id,
       item_name: formData.itemName,
       item_description: formData.description,
       item_quantity: formData.quantity,
@@ -132,7 +145,8 @@ function Inventory() {
             throw new Error(`Error fetching inventory items: ${response.message}`);
           }
 
-          const items = response.data.map(item => {
+          const filteredItems = response.data.filter(item => item.shop_id === adminData.shop_id);
+          const items = filteredItems.map(item => {
             return {
               id: item.item_id,
               itemName: item.item_name,
