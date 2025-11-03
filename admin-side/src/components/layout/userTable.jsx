@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -25,12 +25,14 @@ import { Link } from "react-router-dom";
 import UserPersonalInfo from "./UserPersonalInfo";
 import UserEditModal from "./UserEditModal";
 import { fetchApi } from "@/lib/api";
+import { AuthContext } from "@/context/AuthContext";
 
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [users, setUsers] = useState([]);
   const navigate = useNavigate();
+  const { adminData } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -43,7 +45,7 @@ const UserTable = ({ embedded = false }) => {
           throw new Error("Failed to fetch users");
         }
 
-        const adminUsers = response.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" );
+        const adminUsers = response.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" && user.shop_id === adminData.shop_id);
         const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
           const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
@@ -76,9 +78,6 @@ const UserTable = ({ embedded = false }) => {
     };
 
     fetchUsers();
-
-    const interval = setInterval(fetchUsers, 30000);
-    return () => clearInterval(interval); 
   }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -125,6 +124,7 @@ const UserTable = ({ embedded = false }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            shop_id: adminData.shop_id,
             user_fName: formData.firstName,
             user_lName: formData.lastName,
             user_mName: formData.middleName || null,
@@ -160,7 +160,7 @@ const UserTable = ({ embedded = false }) => {
         const response = await fetchApi('/api/auth/users');
 
         if (response.success) {
-          const adminUsers = response.data.filter(user => user.registered_by === "Admin" || user.registered_by === "ADMIN" );
+          const adminUsers = response.data.filter(user => user.registered_by === "ADMIN" && user.shop_id === adminData.shop_id);
           const formattedUsers = adminUsers.map(user => {
             const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
             const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";

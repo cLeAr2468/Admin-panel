@@ -180,9 +180,9 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
               contactNum: formData.cus_phoneNum,
               email: formData.cus_eMail,
               role: formData.cus_role,
-              status: "Active",
+              status: "ACTIVE",
               password: formData.password,
-              registered_by: "Customer"
+              registered_by: "CUSTOMER"
             }
           ),
         }
