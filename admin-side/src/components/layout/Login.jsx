@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { fetchApi } from "@/lib/api";
+import { AuthContext } from "@/context/AuthContext";
 
 const Login = () => {
     const [username, setUsername] = useState("");
@@ -13,6 +14,7 @@ const Login = () => {
     const [resetEmail, setResetEmail] = useState("");
     const [resetMessage, setResetMessage] = useState("");
     const navigate = useNavigate();
+    const { login } = useContext(AuthContext);
 
 const handleLogin = async (e) => {
     e.preventDefault();
@@ -31,16 +33,22 @@ const handleLogin = async (e) => {
             throw new Error("Invalid response from server");
         }
 
+        // const token = response.token.replace('Bearer ', '');
+        // // localStorage.setItem('token', token);
+        // login(response.token);
+        
+        // if (response.apiKey) {
+        //     // localStorage.setItem('apiKey', response.apiKey);
+        //     login(response.apiKey);
+        // }
+        
+        // if (response.admin) {
+        //     // localStorage.setItem('adminData', JSON.stringify(response.admin));
+        //     login(response.adminData);
+        // }
+
         const token = response.token.replace('Bearer ', '');
-        localStorage.setItem('token', token);
-        
-        if (response.apiKey) {
-            localStorage.setItem('apiKey', response.apiKey);
-        }
-        
-        if (response.admin) {
-            localStorage.setItem('adminData', JSON.stringify(response.admin));
-        }
+        login(response.admin, token, response.apiKey);
 
         navigate("/dashboard");
 
