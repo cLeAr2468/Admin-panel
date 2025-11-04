@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import { X, Search, Calculator, Printer, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -8,10 +8,11 @@ import debounce from "lodash/debounce";
 import { format } from "date-fns";
 import { toast } from 'sonner';
 import { fetchApi } from "@/lib/api";
+import { AuthContext } from "@/context/AuthContext";
 
 const CustomerReceipt = ({ onClose }) => {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
-   const [laundryId, setLaundryId] = useState(null);
+  const [laundryId, setLaundryId] = useState(null);
   const [formData, setFormData] = useState({
     cus_id: '',
     name: '',
@@ -37,35 +38,23 @@ const CustomerReceipt = ({ onClose }) => {
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { adminData } = useContext(AuthContext);
 
-  const fetchCustomerData = async (customerId) => {
+  const fetchCustomerData = async (user_id) => {
     try {
-      if (!customerId || customerId.trim() === '') {
+      if (!user_id?.trim()) return null;
+      if (!adminData?.shop_id) throw new Error("Missing shop_id");
+
+      const response = await fetchApi(`/api/auth/users/search/${adminData.shop_id}/${user_id}`);
+
+      if (!response.success) {
+        toast.error(response.message || 'Customer not found');
         return null;
       }
 
-      const response = await fetchApi(`/api/customers/${customerId}`);
-      
-      if (response.status === 404) {
-        toast.error('Customer not found');
-        return null;
-      }
-      
-      if (response.success === false) {
-        throw new Error(`Error: ${response.status}`);
-      }
-      
-      // Check if the response has the expected structure
-      if (!response.success || !response.data) {
-        toast.error('Invalid response format');
-        return null;
-      }
-
-      // Access the nested data object
-      const customerData = response.data;
-      
-      // Validate that the required fields exist
-      if (!customerData.cus_fName || !customerData.cus_lName) {
+      const customerData = Array.isArray(response.data) ? response.data[0] : response.data;
+      console.log(response.data)
+      if (!customerData?.user_fName || !customerData?.user_lName) {
         toast.error('Invalid customer data received');
         return null;
       }
@@ -73,34 +62,35 @@ const CustomerReceipt = ({ onClose }) => {
       return customerData;
     } catch (error) {
       console.error('Error fetching customer:', error);
-      toast.error('Failed to fetch customer data');
+      toast.error('Customer not found!');
       return null;
     }
   };
 
+
   const handleInputChange = async (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     // Update the form immediately for better UX
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
+
     // Handle the cus_id field specially
-    if (name === 'user_id' && value.trim() !== '') {
+    if (name === 'cus_id' && value.trim() !== '') {
       try {
         // Add loading state if needed
         const customerData = await fetchCustomerData(value);
-        
+
         if (customerData) {
           setFormData(prev => ({
             ...prev,
-            name: `${customerData.cus_fName} ${customerData.cus_lName}`,
-            cus_phoneNum: customerData.cus_phoneNum || '',
-            cus_address: customerData.cus_address || ''
+            name: `${customerData.user_fName} ${customerData.user_lName}`,
+            cus_phoneNum: customerData.contactNum || '',
+            cus_address: customerData.user_address || ''
           }));
-          
+
           toast.success('Customer data loaded');
         } else {
           // Clear related fields if no customer found
@@ -141,6 +131,33 @@ const CustomerReceipt = ({ onClose }) => {
       }));
     }
   };
+
+  const handleEnterKey = async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const user_id = formData.cus_id.trim();
+      if (user_id) {
+        const customerData = await fetchCustomerData(user_id);
+        if (customerData) {
+          setFormData(prev => ({
+            ...prev,
+            name: `${customerData.user_fName} ${customerData.user_lName}`,
+            cus_phoneNum: customerData.contactNum || '',
+            cus_address: customerData.user_address || ''
+          }));
+          toast.success('Customer data loaded');
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            name: '',
+            cus_phoneNum: '',
+            cus_address: ''
+          }));
+        }
+      }
+    }
+  };
+
 
   const calculateTotal = () => {
     const items = [
@@ -195,6 +212,7 @@ const CustomerReceipt = ({ onClose }) => {
     try {
       // Prepare the payload from formData
       const payload = {
+        shop_id: adminData.shop_id,
         userId: formData.cus_id,
         batch: formData.batch,
         shirts: parseInt(formData.shirts) || 0,
@@ -233,7 +251,7 @@ const CustomerReceipt = ({ onClose }) => {
 
     } catch (error) {
       console.error('Error submitting laundry record:', error);
-      toast.error('Failed to submit laundry record! Try again');
+      toast.error('' + error);
     }
   };
 
@@ -241,16 +259,20 @@ const CustomerReceipt = ({ onClose }) => {
   const handleSubmit = async () => {
     // Calculate totals first
     calculateTotal();
-    
+
     // Submit the record
     await submitLaundryRecord();
   };
 
   const fetchCustomers = async () => {
     try {
+      if (!adminData?.shop_id) {
+        console.warn("No sho_id found in adminData");
+        return;
+      }
       setIsLoading(true);
       setError(null);
-      const response = await fetchApi("/api/auth/users/search/");
+      const response = await fetchApi(`/api/auth/users/search/${adminData.shop_id}`);
 
       if (response.success === false) {
         throw new Error("Failed to fetch customers");
@@ -409,7 +431,7 @@ const CustomerReceipt = ({ onClose }) => {
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   LAUNDRY ID:
                 </label>
-                { laundryId && (<div className="border-b-2 border-gray-300 pb-1">{laundryId}</div>)}
+                {laundryId && (<div className="border-b-2 border-gray-300 pb-1">{laundryId}</div>)}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -610,7 +632,7 @@ const CustomerReceipt = ({ onClose }) => {
               </div>
             )}
           </div>
-
+          {/*________________________________________________________________________________  */}
           <div className="mb-6">
             <label className="block text-sm font-semibold text-slate-800 mb-2">
               CUS_ID:
@@ -618,12 +640,13 @@ const CustomerReceipt = ({ onClose }) => {
             <Input
               name="cus_id"
               value={formData.cus_id}
-              onChange={handleInputChange}
+              onKeyDown={handleEnterKey}
+              onChange={(e) => setFormData(prev => ({ ...prev, cus_id: e.target.value }))}
               placeholder="Enter Customer ID"
               className="bg-white text-slate-900"
             />
           </div>
-
+          {/* ___________________________________________________________________________________ */}
           {/* Customer Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Left Column */}
