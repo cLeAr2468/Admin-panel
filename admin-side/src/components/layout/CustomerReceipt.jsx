@@ -78,33 +78,13 @@ const CustomerReceipt = ({ onClose }) => {
     }));
 
     // Handle the cus_id field specially
-    if (name === 'cus_id' && value.trim() !== '') {
-      try {
-        // Add loading state if needed
-        const customerData = await fetchCustomerData(value);
-
-        if (customerData) {
-          setFormData(prev => ({
-            ...prev,
-            name: `${customerData.user_fName} ${customerData.user_lName}`,
-            cus_phoneNum: customerData.contactNum || '',
-            cus_address: customerData.user_address || ''
-          }));
-
-          toast.success('Customer data loaded');
-        } else {
-          // Clear related fields if no customer found
-          setFormData(prev => ({
-            ...prev,
-            name: '',
-            cus_phoneNum: '',
-            cus_address: ''
-          }));
-        }
-      } catch (error) {
-        console.error('Error in handleInputChange:', error);
-        toast.error('Error loading customer data');
-      }
+    if (name === 'cus_id' && value.trim() === '') {
+      setFormData(prev => ({
+        ...prev,
+        name: '',
+        cus_phoneNum: '',
+        cus_address: ''
+      }));
       return;
     }
 
@@ -632,7 +612,6 @@ const CustomerReceipt = ({ onClose }) => {
               </div>
             )}
           </div>
-          {/*________________________________________________________________________________  */}
           <div className="mb-6">
             <label className="block text-sm font-semibold text-slate-800 mb-2">
               CUS_ID:
@@ -641,12 +620,12 @@ const CustomerReceipt = ({ onClose }) => {
               name="cus_id"
               value={formData.cus_id}
               onKeyDown={handleEnterKey}
-              onChange={(e) => setFormData(prev => ({ ...prev, cus_id: e.target.value }))}
+              onChange={handleInputChange}
               placeholder="Enter Customer ID"
               className="bg-white text-slate-900"
             />
           </div>
-          {/* ___________________________________________________________________________________ */}
+
           {/* Customer Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Left Column */}
