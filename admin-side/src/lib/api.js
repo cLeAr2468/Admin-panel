@@ -106,3 +106,35 @@ export const fetchApi = async (endpoint, options = {}) => {
         throw error;
     }
 };
+
+export const fetchApiFormData = async (endpoint, formData, options = {}) => {
+    try {
+        const token = !endpoint.includes('/public/') ? localStorage.getItem('token') : null;
+        const apiKey = import.meta.env.VITE_API_KEY;
+
+        const headers = {
+            'X-API-KEY': apiKey,
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+            ...options.headers
+            // DO NOT set Content-Type - let browser set it with multipart/form-data boundary
+        };
+
+        const defaultOptions = {
+            method: options.method || 'POST',
+            headers,
+            body: formData // formData handles serialization automatically
+        };
+
+        const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('API FormData Error:', error);
+        throw error;
+    }
+};
