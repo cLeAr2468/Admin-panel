@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Plus, Pencil, Trash2, X, Save, CheckCircle, Eye } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
+import { AuthContext } from "@/context/AuthContext";
+import { fetchApi } from "@/lib/api";
 
 const ManageAbout = () => {
   const navigate = useNavigate();
@@ -18,24 +20,7 @@ const ManageAbout = () => {
     image: null,
   });
   const [features, setFeatures] = useState([
-    {
-      id: 1,
-      title: "Personalized Experience",
-      description: "You can always reach us for your laundry concerns. Call or message us — we are happy to help.",
-      icon: "CheckCircle",
-    },
-    {
-      id: 2,
-      title: "Quality",
-      description: "We take care of your clothes. We segregate the whites and coloreds, use gentle detergents, and avoid damage to your garments.",
-      icon: "CheckCircle",
-    },
-    {
-      id: 3,
-      title: "Convenience",
-      description: "None of your laundry will go missing. Every item is counted, and you'll receive automated message notifications for your convenience.",
-      icon: "CheckCircle",
-    },
+
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -45,13 +30,43 @@ const ManageAbout = () => {
   const [featureImagePreview, setFeatureImagePreview] = useState(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [tempSelectedFeatures, setTempSelectedFeatures] = useState([]);
-  
+  const { adminData } = useContext(AuthContext);
+
+  const loadAboutItems = async () => {
+    if (!adminData?.shop_id) return;
+    setIsLoading(true);
+    try {
+      const res = await fetchApi(`/api/auth/get-shop-about/${adminData.shop_id}`);
+      if (!res || res.success === false) {
+        throw new Error(res?.message || "Failed to fetch about items");
+      }
+
+      const items = (res.data || []).map((i) => ({
+        id: i.about_id,
+        title: i.title,
+        description: i.description,
+        isDisplayed: i.is_displayed === "true",
+      }));
+
+      setFeatures(items);
+    } catch (error) {
+      console.error("ManageAbout - loadAboutItems error:", error);
+      toast.error(error?.message || "Unable to load about items");
+      setFeatures([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAboutItems();
+  }, [adminData]);
   const [featureFormData, setFeatureFormData] = useState({
     title: "",
     description: "",
     icon: "CheckCircle",
     image: null,
-    isDisplayed: true,
+    isDisplayed: false,
   });
 
   const handleFeatureChange = (event) => {
@@ -66,14 +81,14 @@ const ManageAbout = () => {
         toast.error('Please select an image file');
         return;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
 
       setFeatureFormData((prev) => ({ ...prev, image: file }));
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setFeatureImagePreview(reader.result);
@@ -82,45 +97,121 @@ const ManageAbout = () => {
     }
   };
 
-  const handleFeatureSubmit = (event) => {
+  const canSetDisplayed = (desired = true, editingFeatureId = null) => {
+    if (!desired) return true;
+ 
+    const displayedCount = features.filter(f => f.isDisplayed === true || f.isDisplayed === "true").length;
+    if (editingFeatureId) {
+
+      const currentlyDisplayed = features.some(
+        f => f.id === editingFeatureId && (f.isDisplayed === true || f.isDisplayed === "true")
+      );
+      if (currentlyDisplayed) return true;
+ 
+    }
+    return displayedCount < 3;
+  };
+
+  const handleFeatureSubmit = async (event) => {
     event.preventDefault();
-    
+
     if (!featureFormData.title || !featureFormData.description) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    if (isEditMode) {
-      setFeatures(features.map(f => 
-        f.id === selectedFeature.id 
-          ? { ...f, title: featureFormData.title, description: featureFormData.description, icon: featureFormData.icon, image_url: featureImagePreview || f.image_url, isDisplayed: featureFormData.isDisplayed }
-          : f
-      ));
-      toast.success("Feature updated successfully");
-    } else {
-      const newFeature = {
-        id: features.length > 0 ? Math.max(...features.map(f => f.id)) + 1 : 1,
+    setIsLoading(true);
+
+    try {
+      if (!adminData?.shop_id) {
+        throw new Error("Shop information not available. Please reload or login.");
+      }
+
+      const wantDisplay = !!featureFormData.isDisplayed;
+      const editingId = isEditMode && selectedFeature ? selectedFeature.id : null;
+      if (!canSetDisplayed(wantDisplay, editingId)) {
+        setFeatureFormData(prev => ({ ...prev, isDisplayed: false }));
+        toast.error("Only 3 features can be displayed. Unselect another one first. This feature will be saved as Hidden.");
+      }
+
+
+      const payload = {
         title: featureFormData.title,
         description: featureFormData.description,
-        icon: featureFormData.icon,
-        image_url: featureImagePreview,
-        isDisplayed: featureFormData.isDisplayed,
+        is_displayed: featureFormData.isDisplayed ? "true" : "false",
       };
-      setFeatures([...features, newFeature]);
-      toast.success("Feature added successfully");
+
+      let response;
+
+      if (isEditMode && selectedFeature) {
+
+        response = await fetchApi(`/api/auth/edit-shop-about/${selectedFeature.id}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+      } else {
+
+        response = await fetchApi("/api/auth/insert-shop-about", {
+          method: "POST",
+          body: JSON.stringify({
+            shop_id: adminData.shop_id,
+            ...payload,
+          }),
+        });
+      }
+
+      if (!response || response.success === false) {
+        const msg = response?.message || "Failed to save feature";
+        toast.error(msg);
+        throw new Error(msg);
+      }
+
+      const result = response.data || {};
+
+      if (isEditMode && selectedFeature) {
+
+        setFeatures((prev) =>
+          prev.map((f) =>
+            f.id === selectedFeature.id
+              ? {
+                ...f,
+                title: payload.title,
+                description: payload.description,
+                isDisplayed: payload.is_displayed === "true",
+              }
+              : f
+          )
+        );
+        toast.success("Feature updated successfully!");
+      } else {
+        
+        const newFeature = {
+          id: result.about_id ?? (features.length > 0 ? Math.max(...features.map(f => f.id)) + 1 : 1),
+          title: payload.title,
+          description: payload.description,
+          isDisplayed: payload.is_displayed === "true",
+        };
+        setFeatures((prev) => [...prev, newFeature]);
+        toast.success("Feature added successfully!");
+      }
+
+      setFeatureFormData({
+        title: "",
+        description: "",
+        icon: "CheckCircle",
+        image: null,
+        isDisplayed: false,
+      });
+      setFeatureImagePreview(null);
+      setIsDialogOpen(false);
+      setIsEditMode(false);
+      setSelectedFeature(null);
+    } catch (error) {
+      console.error("ManageAbout - handleFeatureSubmit error:", error);
+      toast.error(error?.message || "Something went wrong while saving the feature");
+    } finally {
+      setIsLoading(false);
     }
-    
-    setFeatureFormData({
-      title: "",
-      description: "",
-      icon: "CheckCircle",
-      image: null,
-      isDisplayed: true,
-    });
-    setFeatureImagePreview(null);
-    setIsDialogOpen(false);
-    setIsEditMode(false);
-    setSelectedFeature(null);
   };
 
   const handleEditFeature = (feature) => {
@@ -130,14 +221,13 @@ const ManageAbout = () => {
       description: feature.description,
       icon: feature.icon || "CheckCircle",
       image: null,
-      isDisplayed: feature.isDisplayed !== undefined ? feature.isDisplayed : true,
+      isDisplayed: feature.isDisplayed === true || feature.isDisplayed === "true",
     });
     setFeatureImagePreview(feature.image_url || null);
     setIsEditMode(true);
     setIsDialogOpen(true);
   };
 
-  
 
   const handleToggleSelection = (featureId) => {
     if (tempSelectedFeatures.includes(featureId)) {
@@ -151,22 +241,40 @@ const ManageAbout = () => {
     }
   };
 
-  const handleSaveDisplaySettings = () => {
+  const handleSaveDisplaySettings = async () => {
     if (tempSelectedFeatures.length !== 3) {
       toast.error("Please select exactly 3 features to display");
       return;
     }
 
-    // Update features: set selected ones to displayed, others to hidden
-    const updatedFeatures = features.map(f => ({
-      ...f,
-      isDisplayed: tempSelectedFeatures.includes(f.id)
-    }));
-    
-    setFeatures(updatedFeatures);
-    setIsSelectionMode(false);
-    setTempSelectedFeatures([]);
-    toast.success("Display settings saved successfully!");
+    try {
+      setIsLoading(true);
+
+      const res = await fetchApi(`/api/auth/update-display-settings/${adminData.shop_id}`, {
+        method: "PUT",
+        body: JSON.stringify({ displayedFeatureIds: tempSelectedFeatures }),
+      });
+
+      if (!res || res.success === false) {
+        throw new Error(res?.message || "Failed to update display settings");
+      }
+
+      // Update local state
+      const updatedFeatures = features.map(f => ({
+        ...f,
+        isDisplayed: tempSelectedFeatures.includes(f.id)
+      }));
+
+      setFeatures(updatedFeatures);
+      setIsSelectionMode(false);
+      setTempSelectedFeatures([]);
+      toast.success("Display settings saved successfully!");
+    } catch (error) {
+      console.error("handleSaveDisplaySettings error:", error);
+      toast.error(error.message || "Failed to save display settings");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartSelection = () => {
@@ -187,7 +295,7 @@ const ManageAbout = () => {
       description: "",
       icon: "CheckCircle",
       image: null,
-      isDisplayed: true,
+      isDisplayed: false,
     });
     setFeatureImagePreview(null);
     setIsEditMode(false);
@@ -198,7 +306,7 @@ const ManageAbout = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
-      
+
       <div className="flex-1 overflow-auto">
         <div className="p-6">
           {/* Header */}
@@ -277,74 +385,72 @@ const ManageAbout = () => {
                 features.map((feature) => {
                   const isSelected = tempSelectedFeatures.includes(feature.id);
                   return (
-                  <Card 
-                    key={feature.id} 
-                    className={`border shadow-sm transition-all bg-white relative ${
-                      isSelectionMode 
-                        ? isSelected 
-                          ? 'border-green-500 border-2 shadow-lg cursor-pointer' 
+                    <Card
+                      key={feature.id}
+                      className={`border shadow-sm transition-all bg-white relative ${isSelectionMode
+                        ? isSelected
+                          ? 'border-green-500 border-2 shadow-lg cursor-pointer'
                           : 'border-gray-200 hover:border-[#0B6B87] cursor-pointer'
                         : 'border-gray-200 hover:shadow-md'
-                    }`}
-                    onClick={() => isSelectionMode && handleToggleSelection(feature.id)}
-                  >
-                    <CardContent className="p-6">
-                      {/* Display Status Badge or Selection Checkbox */}
-                      <div className="absolute top-3 right-3">
-                        {isSelectionMode ? (
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                            isSelected 
-                              ? 'bg-green-500 border-green-500' 
+                        }`}
+                      onClick={() => isSelectionMode && handleToggleSelection(feature.id)}
+                    >
+                      <CardContent className="p-6">
+                        {/* Display Status Badge or Selection Checkbox */}
+                        <div className="absolute top-3 right-3">
+                          {isSelectionMode ? (
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected
+                              ? 'bg-green-500 border-green-500'
                               : 'bg-white border-gray-300'
-                          }`}>
-                            {isSelected && (
-                              <CheckCircle className="h-4 w-4 text-white" />
-                            )}
+                              }`}>
+                              {isSelected && (
+                                <CheckCircle className="h-4 w-4 text-white" />
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              {feature.isDisplayed !== false ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                                  Displayed
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                                  Hidden
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-start gap-3 mb-4 pr-20">
+                          <CheckCircle className="h-6 w-6 text-[#0B6B87] flex-shrink-0 mt-1" />
+                          <div className="flex-1">
+                            <h3 className="font-bold text-lg text-[#0B6B87] mb-3">
+                              {feature.title}
+                            </h3>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {feature.description}
+                            </p>
                           </div>
-                        ) : (
-                          <>
-                            {feature.isDisplayed !== false ? (
-                              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                                Displayed
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                                Hidden
-                              </span>
-                            )}
-                          </>
+                        </div>
+                        {!isSelectionMode && (
+                          <div className="flex gap-3 mt-6">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditFeature(feature);
+                              }}
+                              className="flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                          </div>
                         )}
-                      </div>
-                      
-                      <div className="flex items-start gap-3 mb-4 pr-20">
-                        <CheckCircle className="h-6 w-6 text-[#0B6B87] flex-shrink-0 mt-1" />
-                        <div className="flex-1">
-                          <h3 className="font-bold text-lg text-[#0B6B87] mb-3">
-                            {feature.title}
-                          </h3>
-                          <p className="text-sm text-gray-700 leading-relaxed">
-                            {feature.description}
-                          </p>
-                        </div>
-                      </div>
-                      {!isSelectionMode && (
-                        <div className="flex gap-3 mt-6">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditFeature(feature);
-                            }}
-                            className="flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
                   );
                 })
               )}
@@ -532,7 +638,21 @@ const ManageAbout = () => {
                   type="checkbox"
                   id="isDisplayed"
                   checked={featureFormData.isDisplayed}
-                  onChange={(e) => setFeatureFormData(prev => ({ ...prev, isDisplayed: e.target.checked }))}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    const displayedCount = features.filter(
+                      f =>
+                        (f.isDisplayed === true || f.isDisplayed === "true") &&
+                        (!isEditMode || f.id !== selectedFeature?.id)
+                    ).length;
+
+                    if (!canSetDisplayed(newValue, selectedFeature?.id)) {
+                      toast.error("You already have 3 displayed features. Uncheck another one first.");
+                      return;
+                    }
+                    setFeatureFormData(prev => ({ ...prev, isDisplayed: newValue }));
+                  }}
+
                   className="w-4 h-4 text-[#126280] border-gray-300 rounded focus:ring-[#126280]"
                 />
                 <label htmlFor="isDisplayed" className="text-sm font-medium text-gray-700 cursor-pointer">

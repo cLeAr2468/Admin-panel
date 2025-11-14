@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { toast } from 'sonner';
 import { Card, CardContent } from "@/components/ui/card"; 
 import { fetchApi } from "@/lib/api";
+import { AuthContext } from "@/context/AuthContext";
 
 // OTP Modal Component
 const OTPModal = ({ open, onClose, onSubmit, onResend, resendDisabled, resendTimer }) => {
@@ -119,7 +120,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
     confirmPassword: "",
     registeredBy: registeredBy
   });
-
+  const { adminData } = useContext(AuthContext);
   // Add useEffect to update registeredBy when prop changes
   useEffect(() => {
     setFormData(prev => ({
@@ -170,6 +171,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
           },
           body: JSON.stringify(
             {
+              shop_id: adminData.shop_id,
               user_fName: formData.cus_fName,
               user_lName: formData.cus_lName,
               user_mName: formData.cus_mName,
@@ -178,14 +180,14 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
               contactNum: formData.cus_phoneNum,
               email: formData.cus_eMail,
               role: formData.cus_role,
-              status: "Pending",
+              status: "ACTIVE",
               password: formData.password,
-              registered_by: "Customer"
+              registered_by: "CUSTOMER"
             }
           ),
         }
       );
-
+      console.log(adminData.shop_id);
       if (response.success === false) {
         throw new Error(response.message || "Failed to register customer");
       }
@@ -208,7 +210,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
         onSave(response);
       }
 
-      onClose();
+      // onClose();
 
       toast.success("Customer registered successfully!");
 

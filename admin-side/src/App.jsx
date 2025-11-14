@@ -78,7 +78,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <Toaster position="top-right" />
+      {/* <Toaster position="top-right" /> */}
       <SonnerToaster position="top-right" richColors />
       <AppContent />
     </Router>

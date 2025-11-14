@@ -1,30 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { fetchApi } from "@/lib/api";
+import { AuthContext } from "@/context/AuthContext";
 
 const Login = () => {
-    const [username, setUsername] = useState("admin");
-    const [password, setPassword] = useState("password");
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [showForgotModal, setShowForgotModal] = useState(false);
     const [resetEmail, setResetEmail] = useState("");
     const [resetMessage, setResetMessage] = useState("");
     const navigate = useNavigate();
+    const { login } = useContext(AuthContext);
 
-    const handleLogin = (e) => {
-        e.preventDefault();
-        setError("");
+const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
 
-        // Simple hardcoded authentication
-        if (username === "admin" && password === "password") {
-            // Navigate to dashboard on successful login
-            navigate("/dashboard");
-        } else {
-            setError("Invalid username or password. Use admin/password");
+    try {
+        const response = await fetchApi('/api/public/admin/login', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                emailOrUsername: username, 
+                password: password
+            })
+        });
+        
+        if (!response.message || !response.token) {
+            throw new Error("Invalid response from server");
         }
-    };
+
+        // const token = response.token.replace('Bearer ', '');
+        // // localStorage.setItem('token', token);
+        // login(response.token);
+        
+        // if (response.apiKey) {
+        //     // localStorage.setItem('apiKey', response.apiKey);
+        //     login(response.apiKey);
+        // }
+        
+        // if (response.admin) {
+        //     // localStorage.setItem('adminData', JSON.stringify(response.admin));
+        //     login(response.adminData);
+        // }
+
+        const token = response.token.replace('Bearer ', '');
+        login(response.admin, token, response.apiKey);
+
+        navigate("/dashboard");
+
+    } catch (error) {
+        console.error('Login error:', error);
+        setError(error.message || "Invalid credentials. Please try again.");
+    }
+};
 
     // Handle password reset submission
     const handleResetSubmit = (e) => {
@@ -82,7 +114,7 @@ const Login = () => {
                                 </div>
 
                                 <h2 className="text-xl md:text-2xl font-bold text-center">Login</h2>
-                                
+
                                 {error && (
                                     <p className="text-red-500 text-sm text-center font-semibold">
                                         {error}
@@ -122,7 +154,7 @@ const Login = () => {
                                         </button>
                                     </p>
 
-                                    <Button 
+                                    <Button
                                         type="submit"
                                         className="w-full mt-2 md:mt-4 bg-[#126280] hover:bg-[#126280]/80 h-10 md:h-12 text-sm md:text-base text-white"
                                     >

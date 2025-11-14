@@ -71,56 +71,70 @@
 //     }
 // };
 
-const API_KEY = import.meta.env.VITE_API_KEY;
+const API_KEY = import.meta.env.VITE_API_KEY ;
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-/**
- * Unified fetch function that automatically attaches:
- * - Authorization token (if available)
- * - API Key (always included)
- */
 export const fetchApi = async (endpoint, options = {}) => {
     try {
-        const token = localStorage.getItem('token');
+        const token = !endpoint.includes('/public/') ? localStorage.getItem('token') : null;
+        const apiKey = import.meta.env.VITE_API_KEY;
 
-        // Merge default headers
+        
         const headers = {
             'Content-Type': 'application/json',
-            'X-API-KEY': API_KEY,
-            ...(token && { 'Authorization': token }), // only add if token exists
+            'X-API-KEY': apiKey,
+            ...(token && { 'Authorization': `Bearer ${token}` }),
             ...options.headers
         };
 
         const defaultOptions = {
             method: options.method || 'GET',
             headers,
-            credentials: 'include',
-            ...(options.body && { body: options.body }),
+            body: options.body 
         };
 
         const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+        const data = await response.json();
 
-        // Handle errors
         if (!response.ok) {
-            if (response.status === 401) {
-                localStorage.removeItem('token');
-                throw new Error('Unauthorized: Please log in again.');
-            }
-
-            let errorData;
-            try {
-                errorData = await response.json();
-            } catch {
-                errorData = { message: 'An unexpected error occurred' };
-            }
-
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
         }
 
-        // Return JSON or empty object if no content
-        return response.status !== 204 ? await response.json() : {};
+        return data;
     } catch (error) {
         console.error('API Error:', error);
+        throw error;
+    }
+};
+
+export const fetchApiFormData = async (endpoint, formData, options = {}) => {
+    try {
+        const token = !endpoint.includes('/public/') ? localStorage.getItem('token') : null;
+        const apiKey = import.meta.env.VITE_API_KEY;
+
+        const headers = {
+            'X-API-KEY': apiKey,
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+            ...options.headers
+            // DO NOT set Content-Type - let browser set it with multipart/form-data boundary
+        };
+
+        const defaultOptions = {
+            method: options.method || 'POST',
+            headers,
+            body: formData // formData handles serialization automatically
+        };
+
+        const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('API FormData Error:', error);
         throw error;
     }
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Plus, Pencil, Trash2, X, Save, Eye, CheckCircle, Upload } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
+import { AuthContext } from "@/context/AuthContext";
+import { fetchApi, fetchApiFormData } from "@/lib/api";
 
 const ManageServices = () => {
   const navigate = useNavigate();
@@ -41,13 +43,43 @@ const ManageServices = () => {
   const [showServiceDialog, setShowServiceDialog] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [tempSelectedServices, setTempSelectedServices] = useState([]);
-  
+  const { adminData } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     image: null,
     isDisplayed: true,
   });
+
+  const loadServicesItems = async () => {
+    if (!adminData?.shop_id) return;
+    setIsLoading(true);
+    try {
+      const res = await fetchApi(`/api/auth/get-all-services/${adminData.shop_id}`);
+      if (!res || res.success === false) {
+        throw new Error(res?.message || "Failed to fetch about items");
+      }
+      const items = (res.data || []).map((i) => ({
+        id: i.service_id,
+        title: i.service_name,
+        description: i.service_description,
+        image_url: i.image_url,
+        isDisplayed: i.is_displayed === "true",
+      }));
+
+      setServices(items);
+    } catch (error) {
+      console.error("ManageServices - loadAboutItems error:", error);
+      toast.error(error?.message || "Unable to load services items");
+      setServices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadServicesItems();
+  }, [adminData]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -61,14 +93,14 @@ const ManageServices = () => {
         toast.error('Please select an image file');
         return;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
 
       setFormData((prev) => ({ ...prev, image: file }));
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -77,43 +109,153 @@ const ManageServices = () => {
     }
   };
 
-  const handleSubmit = (event) => {
+  const canSetDisplayed = (desired = true, editingServiceId = null) => {
+    if (!desired) return true;
+
+    const displayedCount = services.filter(s => s.isDisplayed === true || s.isDisplayed === "true").length;
+    if (editingServiceId) {
+
+      const currentlyDisplayed = services.some(
+        s => s.id === editingServiceId && (s.isDisplayed === true || s.isDisplayed === "true")
+      );
+      if (currentlyDisplayed) return true;
+
+    }
+    return displayedCount < 3;
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    
+
     if (!formData.title || !formData.description) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    if (isEditMode) {
-      setServices(services.map(s => 
-        s.id === selectedService.id 
-          ? { ...s, title: formData.title, description: formData.description, image_url: imagePreview || s.image_url, isDisplayed: formData.isDisplayed }
-          : s
-      ));
-      toast.success("Service updated successfully");
-    } else {
-      const newService = {
-        id: services.length > 0 ? Math.max(...services.map(s => s.id)) + 1 : 1,
-        title: formData.title,
-        description: formData.description,
-        image_url: imagePreview,
-        isDisplayed: formData.isDisplayed,
-      };
-      setServices([...services, newService]);
-      toast.success("Service added successfully");
+    try {
+      if (!adminData?.shop_id) {
+        throw new Error("Shop information not available. Please reload or login.");
+      }
+
+      const wantDisplay = !!formData.isDisplayed;
+      const editingId = isEditMode && selectedService ? selectedService.id : null;
+      if (!canSetDisplayed(wantDisplay, editingId)) {
+        setFormData(prev => ({ ...prev, isDisplayed: false }));
+        toast.error("Only 3 services can be displayed. Unselect another one first. This feature will be saved as Hidden.");
+      }
+
+      const formDataToSend = new FormData();
+      formDataToSend.append("shop_id", adminData.shop_id);
+      formDataToSend.append("service_name", formData.title);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
+
+      if (formData.image) {
+        formDataToSend.append("image", formData.image);
+      }
+
+      if (isEditMode && selectedService) {
+        const formDataToSend = new FormData();
+        formDataToSend.append("service_name", formData.title);
+        formDataToSend.append("service_description", formData.description);
+        formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
+
+        if (!formData.image && selectedService.image_url) {
+          formDataToSend.append("old_image_url", selectedService.image_url);
+        }
+
+        if (formData.image) {
+          formDataToSend.append("image", formData.image);
+        }
+
+        const response = await fetchApiFormData(
+          `/api/auth/update-service/${selectedService.id}`,
+          formDataToSend,
+          { method: "PUT" }
+        );
+
+        if (!response || response.success === false) {
+          throw new Error(response?.message || "Update failed.");
+        }
+
+        setServices(services.map(s =>
+          s.id === selectedService.id
+            ? {
+              ...s,
+              title: formData.title,
+              description: formData.description,
+              image_url: response.data.image_url || s.image_url,
+              isDisplayed: formData.isDisplayed
+            }
+            : s
+        ));
+
+        toast.success("Service updated successfully!");
+
+        // reset
+        setFormData({
+          title: "",
+          description: "",
+          image: null,
+          isDisplayed: false,
+        });
+        setImagePreview(null);
+        setIsDialogOpen(false);
+        setIsEditMode(false);
+        setSelectedService(null);
+
+        return;
+      } else {
+        setIsLoading(true);
+        const response = await fetchApiFormData('/api/auth/add-service', formDataToSend);
+      }
+
+      if (isEditMode && selectedService) {
+        setServices(services.map(s =>
+          s.id === selectedService.id
+            ? {
+              ...s,
+              title: formData.title,
+              description: formData.description,
+              image_url: imagePreview || s.image_url,
+              isDisplayed: formData.isDisplayed
+            }
+            : s
+        ));
+        toast.success("Service updated successfully");
+      } else {
+        setServices((prev) => [
+          ...prev,
+          {
+            id: response.data.service_id,
+            title: response.data.service_name,
+            description: response.data.description,
+            image_url: response.data.image_url,
+            isDisplayed: response.data.is_displayed === "true",
+          },
+        ]);
+
+        toast.success("Service added successfully!");
+      }
+
+
+      setFormData({
+        title: "",
+        description: "",
+        image: null,
+        isDisplayed: false,
+      });
+      setImagePreview(null);
+      setIsDialogOpen(false);
+      setIsEditMode(false);
+      setSelectedService(null);
+
+    } catch (error) {
+      console.error("Add service error:", error);
+      toast.error(error.message || "Server error. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    
-    setFormData({
-      title: "",
-      description: "",
-      image: null,
-      isDisplayed: true,
-    });
-    setImagePreview(null);
-    setIsDialogOpen(false);
-    setIsEditMode(false);
-    setSelectedService(null);
   };
 
   const handleEdit = (service) => {
@@ -122,7 +264,7 @@ const ManageServices = () => {
       title: service.title,
       description: service.description || "",
       image: null,
-      isDisplayed: service.isDisplayed !== undefined ? service.isDisplayed : true,
+      isDisplayed: service.isDisplayed === true || service.isDisplayed === "true",
     });
     setImagePreview(service.image_url || null);
     setIsEditMode(true);
@@ -152,7 +294,7 @@ const ManageServices = () => {
       ...s,
       isDisplayed: tempSelectedServices.includes(s.id)
     }));
-    
+
     setServices(updatedServices);
     setIsSelectionMode(false);
     setTempSelectedServices([]);
@@ -175,7 +317,7 @@ const ManageServices = () => {
       title: "",
       description: "",
       image: null,
-      isDisplayed: true,
+      isDisplayed: false,
     });
     setImagePreview(null);
     setIsEditMode(false);
@@ -186,7 +328,7 @@ const ManageServices = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
-      
+
       <div className="flex-1 overflow-auto">
         <div className="p-6">
           {/* Header */}
@@ -263,88 +405,86 @@ const ManageServices = () => {
                 services.map((service) => {
                   const isSelected = tempSelectedServices.includes(service.id);
                   return (
-                  <Card 
-                    key={service.id} 
-                    className={`border shadow-sm transition-all bg-white relative ${
-                      isSelectionMode 
-                        ? isSelected 
-                          ? 'border-green-500 border-2 shadow-lg cursor-pointer' 
+                    <Card
+                      key={service.id}
+                      className={`border shadow-sm transition-all bg-white relative ${isSelectionMode
+                        ? isSelected
+                          ? 'border-green-500 border-2 shadow-lg cursor-pointer'
                           : 'border-gray-200 hover:border-[#0B6B87] cursor-pointer'
                         : 'border-gray-200 hover:shadow-md'
-                    }`}
-                    onClick={() => isSelectionMode && handleToggleSelection(service.id)}
-                  >
-                    <CardContent className="p-0">
-                      {/* Image Section */}
-                      <div className="relative h-48 bg-gray-200">
-                        {service.image_url ? (
-                          <img
-                            src={service.image_url}
-                            alt={service.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <Upload className="h-12 w-12" />
-                          </div>
-                        )}
-                        
-                        {/* Display Status Badge or Selection Checkbox */}
-                        <div className="absolute top-3 right-3">
-                          {isSelectionMode ? (
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              isSelected 
-                                ? 'bg-green-500 border-green-500' 
-                                : 'bg-white border-gray-300'
-                            }`}>
-                              {isSelected && (
-                                <CheckCircle className="h-4 w-4 text-white" />
-                              )}
-                            </div>
+                        }`}
+                      onClick={() => isSelectionMode && handleToggleSelection(service.id)}
+                    >
+                      <CardContent className="p-0">
+                        {/* Image Section */}
+                        <div className="relative h-48 bg-gray-200">
+                          {service.image_url ? (
+                            <img
+                              src={service.image_url}
+                              alt={service.title}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
-                            <>
-                              {service.isDisplayed !== false ? (
-                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                                  Displayed
-                                </span>
-                              ) : (
-                                <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                                  Hidden
-                                </span>
-                              )}
-                            </>
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <Upload className="h-12 w-12" />
+                            </div>
+                          )}
+
+                          {/* Display Status Badge or Selection Checkbox */}
+                          <div className="absolute top-3 right-3">
+                            {isSelectionMode ? (
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected
+                                ? 'bg-green-500 border-green-500'
+                                : 'bg-white border-gray-300'
+                                }`}>
+                                {isSelected && (
+                                  <CheckCircle className="h-4 w-4 text-white" />
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                {service.isDisplayed !== false ? (
+                                  <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                                    Displayed
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                                    Hidden
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-[#0B6B87] mb-3">
+                            {service.title}
+                          </h3>
+                          <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                            {service.description}
+                          </p>
+
+                          {!isSelectionMode && (
+                            <div className="flex gap-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(service);
+                                }}
+                                className="flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </Button>
+                            </div>
                           )}
                         </div>
-                      </div>
-                      
-                      {/* Content Section */}
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-[#0B6B87] mb-3">
-                          {service.title}
-                        </h3>
-                        <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                          {service.description}
-                        </p>
-                        
-                        {!isSelectionMode && (
-                          <div className="flex gap-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(service);
-                              }}
-                              className="flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
-                            >
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
                   );
                 })
               )}
@@ -454,7 +594,20 @@ const ManageServices = () => {
                   type="checkbox"
                   id="isDisplayed"
                   checked={formData.isDisplayed}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isDisplayed: e.target.checked }))}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    const displayedCount = services.filter(
+                      i =>
+                        (i.isDisplayed === true || i.isDisplayed === "true") &&
+                        (!isEditMode || i.id !== selectedService?.id)
+                    ).length;
+
+                    if (!canSetDisplayed(newValue, selectedService?.id)) {
+                      toast.error("You already have 3 displayed services. Uncheck another one first.");
+                      return;
+                    }
+                    setFormData(prev => ({ ...prev, isDisplayed: newValue }));
+                  }}
                   className="w-4 h-4 text-[#126280] border-gray-300 rounded focus:ring-[#126280]"
                 />
                 <label htmlFor="isDisplayed" className="text-sm font-medium text-gray-700 cursor-pointer">

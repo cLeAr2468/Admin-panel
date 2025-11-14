@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from './Sidebar';
 import ItemDetails from './ItemDetails';
 import {
@@ -20,6 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Eye, Pencil, Save, X, Plus, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import { fetchApi } from "@/lib/api";
+import { AuthContext } from '@/context/AuthContext';
 
 function Inventory() {
   const [timeRange, setTimeRange] = useState("all");
@@ -30,6 +33,105 @@ function Inventory() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({
     inventoryId: "",
+    shopId: "",
+    itemName: "",
+    description: "",
+    quantity: "",
+    unitPrice: "",
+    reorderLevel: "",
+  });
+  const { adminData } = useContext(AuthContext);
+
+  // Static inventory data
+  const [inventoryItems, setInventoryItems] = useState([
+  ]);
+
+
+useEffect(() => {
+  const fetchInventory = async () => {
+    try {
+     
+      if (!adminData) {
+        console.log('Waiting for admin data...');
+        return;
+      }
+
+      const response = await fetchApi('/api/auth/shop-inventory-items');
+      
+      console.log('Admin shop ID:', adminData.shop_id);
+
+      if (response.success === false) {
+        throw new Error(`Error fetching inventory items: ${response.message}`);
+      }
+      
+      const filteredItems = response.data.filter(item => item.shop_id === adminData.shop_id);
+      
+      const items = filteredItems.map(item => {
+        return {
+          id: item.item_id,
+          shopId: item.shop_id,
+          itemName: item.item_name,
+          description: item.item_description,
+          quantity: parseInt(item.item_quantity, 10),
+          unitPrice: parseFloat(item.item_uPrice),
+          reorderLevel: parseFloat(item.item_reoderLevel, 10),
+          dateAdded: item.date_added
+        };
+      });
+
+      console.log('Fetched inventory items:', items);
+      setInventoryItems(items);
+    } catch (error) {
+      console.error('Failed to fetch inventory items:', error);
+      setInventoryItems([]);
+    }
+  };
+
+  fetchInventory();
+}, [adminData]); 
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
+    // const newItem = {
+    //   id: `INV${String(inventoryItems.length + 1).padStart(3, '0')}`,
+    //   itemName: formData.itemName,
+    //   description: formData.description,
+    //   quantity: parseInt(formData.quantity),
+    //   unitPrice: parseFloat(formData.unitPrice),
+    //   reorderLevel: parseInt(formData.reorderLevel),
+    //   dateAdded: new Date().toISOString().split('T')[0],
+    // };
+
+    // setInventoryItems((prev) => [...prev, newItem]);
+    try {
+  const response = await fetchApi('/api/auth/add-shop-inventory', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      shop_id: adminData.shop_id,
+      item_name: formData.itemName,
+      item_description: formData.description,
+      item_quantity: formData.quantity,
+      item_uPrice: formData.unitPrice,
+      item_reoderLevel: formData.reorderLevel,
+    }),
+  });
+
+  if (!response || response.success === false) {
+    const msg = response?.message || 'Error adding item';
+    toast.error(msg);
+    throw new Error(msg);
+  } else {
+    toast.success("Item added successfully!");
+  setIsDialogOpen(false);
+  setFormData({
+    inventoryId: "",
     itemName: "",
     description: "",
     quantity: "",
@@ -37,85 +139,38 @@ function Inventory() {
     reorderLevel: "",
   });
 
-  // Static inventory data
-  const [inventoryItems, setInventoryItems] = useState([
-    {
-      id: "INV001",
-      itemName: "Laundry Detergent",
-      description: "Heavy-duty detergent for commercial use",
-      quantity: 150,
-      unitPrice: 25.50,
-      reorderLevel: 50,
-      dateAdded: "2024-10-15",
-    },
-    {
-      id: "INV002",
-      itemName: "Fabric Softener",
-      description: "Premium fabric softener",
-      quantity: 80,
-      unitPrice: 18.75,
-      reorderLevel: 30,
-      dateAdded: "2024-10-20",
-    },
-    {
-      id: "INV003",
-      itemName: "Bleach",
-      description: "Industrial strength bleach",
-      quantity: 45,
-      unitPrice: 15.00,
-      reorderLevel: 20,
-      dateAdded: "2024-10-22",
-    },
-    {
-      id: "INV004",
-      itemName: "Stain Remover",
-      description: "Professional stain remover spray",
-      quantity: 30,
-      unitPrice: 22.00,
-      reorderLevel: 25,
-      dateAdded: "2024-10-25",
-    },
-    {
-      id: "INV005",
-      itemName: "Dryer Sheets",
-      description: "Anti-static dryer sheets",
-      quantity: 200,
-      unitPrice: 8.50,
-      reorderLevel: 75,
-      dateAdded: "2024-10-18",
-    },
-  ]);
+  const response = await fetchApi('/api/auth/shop-inventory-items');
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+          if (response.success === false) {
+            throw new Error(`Error fetching inventory items: ${response.message}`);
+          }
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    
-    const newItem = {
-      id: `INV${String(inventoryItems.length + 1).padStart(3, '0')}`,
-      itemName: formData.itemName,
-      description: formData.description,
-      quantity: parseInt(formData.quantity),
-      unitPrice: parseFloat(formData.unitPrice),
-      reorderLevel: parseInt(formData.reorderLevel),
-      dateAdded: new Date().toISOString().split('T')[0],
-    };
+          const filteredItems = response.data.filter(item => item.shop_id === adminData.shop_id);
+          const items = filteredItems.map(item => {
+            return {
+              id: item.item_id,
+              itemName: item.item_name,
+              description: item.item_description,
+              quantity: parseInt(item.item_quantity, 10),
+              unitPrice: parseFloat(item.item_uPrice),
+              reorderLevel: parseFloat(item.item_reoderLevel, 10),
+              dateAdded: item.date_added
+            };
+          });
+          console.log('Fetched inventory items:', items);
+          setInventoryItems(items);
+  }
 
-    setInventoryItems((prev) => [...prev, newItem]);
-    
-    setFormData({
-      inventoryId: "",
-      itemName: "",
-      description: "",
-      quantity: "",
-      unitPrice: "",
-      reorderLevel: "",
-    });
-    
-    setIsDialogOpen(false);
+} catch (error) {
+  console.error('Adding inventory item error:', error);
+  const msg =
+    error?.response?.data?.message || 
+    error?.message ||
+    'Something went wrong while adding the item';
+
+  toast.error(msg);
+}
+
   };
 
   const handleView = (item) => {
@@ -136,33 +191,76 @@ function Inventory() {
     setIsEditModalOpen(true);
   };
 
-  const handleEditSubmit = (event) => {
+  const handleEditSubmit = async (event) => {
     event.preventDefault();
-    
-    const updatedItem = {
-      ...selectedItem,
-      itemName: formData.itemName,
-      description: formData.description,
-      quantity: parseInt(formData.quantity),
-      unitPrice: parseFloat(formData.unitPrice),
-      reorderLevel: parseInt(formData.reorderLevel),
-    };
 
-    setInventoryItems((prev) => 
-      prev.map((item) => item.id === selectedItem.id ? updatedItem : item)
-    );
-    
-    setFormData({
-      inventoryId: "",
-      itemName: "",
-      description: "",
-      quantity: "",
-      unitPrice: "",
-      reorderLevel: "",
-    });
-    
-    setIsEditModalOpen(false);
-    setSelectedItem(null);
+    if (!selectedItem) {
+      toast.error("No item selected to update");
+      return;
+    }
+
+    try {
+      const updatePayload = {
+        // match API field names
+        item_name: formData.itemName,
+        item_description: formData.description,
+        item_quantity: parseInt(formData.quantity, 10) || 0,
+        item_uPrice: parseFloat(formData.unitPrice) || 0,
+        item_reoderLevel: parseInt(formData.reorderLevel, 10) || 0,
+      };
+
+      console.log("Sending update payload:", updatePayload);
+
+      const response = await fetchApi(
+        `/api/auth/edit-inventory-item/${selectedItem.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatePayload),
+        }
+      );
+
+      if (!response || response.success === false) {
+        const msg = response?.message || "Failed to update item";
+        toast.error(msg);
+        throw new Error(msg);
+      }
+
+      // Update local state so UI reflects change immediately
+      setInventoryItems((prev) =>
+        prev.map((it) =>
+          it.id === selectedItem.id
+            ? {
+                ...it,
+                itemName: formData.itemName,
+                description: formData.description,
+                quantity: parseInt(formData.quantity, 10) || 0,
+                unitPrice: parseFloat(formData.unitPrice) || 0,
+                reorderLevel: parseInt(formData.reorderLevel, 10) || 0,
+              }
+            : it
+        )
+      );
+
+      toast.success("Item updated successfully!");
+
+      // reset and close modal
+      setFormData({
+        inventoryId: "",
+        itemName: "",
+        description: "",
+        quantity: "",
+        unitPrice: "",
+        reorderLevel: "",
+      });
+      setIsEditModalOpen(false);
+      setSelectedItem(null);
+    } catch (error) {
+      console.error("Updating inventory item error:", error);
+      const msg =
+        error?.response?.data?.message || error?.message || "Something went wrong while updating the item";
+      toast.error(msg);
+    }
   };
 
   const getStockBadgeColor = (quantity, reorderLevel) => {
@@ -311,7 +409,7 @@ function Inventory() {
                     <TableRow key={item.id} className="bg-white">
                       <TableCell>{item.itemName}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell>₱{item.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell>₱{parseFloat(item.unitPrice).toFixed(2)}</TableCell>
                       <TableCell>{item.reorderLevel}</TableCell>
                       <TableCell>
                         <Badge className={`${getStockBadgeColor(item.quantity, item.reorderLevel)} text-white`}>

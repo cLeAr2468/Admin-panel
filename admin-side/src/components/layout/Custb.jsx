@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -22,11 +22,13 @@ import { Link, useNavigate } from "react-router-dom";
 import UserEditModal from "./UserEditModal";
 import UserPersonalInfo from "./UserPersonalInfo";
 import { fetchApi } from "@/lib/api";
+import { AuthContext } from "@/context/AuthContext";
 
 const Custb = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [users, setUsers] = useState([]);
+  const { adminData } = useContext(AuthContext);
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -39,12 +41,11 @@ const Custb = ({ embedded = false }) => {
         }
 
         console.log("API response:", response);
-        
-        const adminUsers = response.data.filter(user => user.registered_by === "Customer");
-        
+        const adminUsers = response.data.filter(user => user.registered_by === "CUSTOMER" && user.shop_id === adminData.shop_id);
         const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
           const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
+          console.log(adminUsers)
           return {
             id: user.user_id,
             name: `${user.user_lName}, ${user.user_fName}${middleName}`,
@@ -74,12 +75,6 @@ const Custb = ({ embedded = false }) => {
     };
 
     fetchUsers();
-
-    // Set up polling every 30 seconds
-    const interval = setInterval(fetchUsers, 30000);
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(interval);
   }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
