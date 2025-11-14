@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, X, Save, Eye, CheckCircle, Upload } fr
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
 import { AuthContext } from "@/context/AuthContext";
-import { fetchApiFormData } from "@/lib/api";
+import { fetchApi, fetchApiFormData } from "@/lib/api";
 
 const ManageServices = () => {
   const navigate = useNavigate();
@@ -51,6 +51,36 @@ const ManageServices = () => {
     isDisplayed: true,
   });
 
+  const loadServicesItems = async () => {
+    if (!adminData?.shop_id) return;
+    setIsLoading(true);
+    try {
+      const res = await fetchApi(`/api/auth/get-all-services/${adminData.shop_id}`);
+      if (!res || res.success === false) {
+        throw new Error(res?.message || "Failed to fetch about items");
+      }
+      const items = (res.data || []).map((i) => ({
+        id: i.service_id,
+        title: i.service_name,
+        description: i.service_description,
+        image_url: i.image_url,
+        isDisplayed: i.is_displayed === "true",
+      }));
+
+      setServices(items);
+    } catch (error) {
+      console.error("ManageServices - loadAboutItems error:", error);
+      toast.error(error?.message || "Unable to load services items");
+      setServices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadServicesItems();
+  }, [adminData]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -79,6 +109,21 @@ const ManageServices = () => {
     }
   };
 
+  const canSetDisplayed = (desired = true, editingServiceId = null) => {
+    if (!desired) return true;
+
+    const displayedCount = services.filter(i => i.isDisplayed === true || i.isDisplayed === "true").length;
+    if (editingServiceId) {
+
+      const currentlyDisplayed = services.some(
+        s => s.id === editingServiceId && (i.isDisplayed === true || i.isDisplayed === "true")
+      );
+      if (currentlyDisplayed) return true;
+
+    }
+    return displayedCount < 3;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -92,7 +137,14 @@ const ManageServices = () => {
         throw new Error("Shop information not available. Please reload or login.");
       }
 
-      if (isEditMode) {
+      const wantDisplay = !!formData.isDisplayed;
+      const editingId = isEditMode && selectedService ? selectedService.id : null;
+      if (!canSetDisplayed(wantDisplay, editingId)) {
+        setFormData(prev => ({ ...prev, isDisplayed: false }));
+        toast.error("Only 3 services can be displayed. Unselect another one first. This feature will be saved as Hidden.");
+      }
+
+      if (isEditMode && selectedService) {
 
         setServices(services.map(s =>
           s.id === selectedService.id
@@ -142,7 +194,7 @@ const ManageServices = () => {
         title: "",
         description: "",
         image: null,
-        isDisplayed: true,
+        isDisplayed: false,
       });
       setImagePreview(null);
       setIsDialogOpen(false);
@@ -163,7 +215,7 @@ const ManageServices = () => {
       title: service.title,
       description: service.description || "",
       image: null,
-      isDisplayed: service.isDisplayed !== undefined ? service.isDisplayed : true,
+      isDisplayed: service.isDisplayed === true || service.isDisplayed === "true",
     });
     setImagePreview(service.image_url || null);
     setIsEditMode(true);
@@ -216,7 +268,7 @@ const ManageServices = () => {
       title: "",
       description: "",
       image: null,
-      isDisplayed: true,
+      isDisplayed: false,
     });
     setImagePreview(null);
     setIsEditMode(false);
@@ -493,7 +545,20 @@ const ManageServices = () => {
                   type="checkbox"
                   id="isDisplayed"
                   checked={formData.isDisplayed}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isDisplayed: e.target.checked }))}
+                                    onChange={(e) => {
+                                      const newValue = e.target.checked;
+                                      const displayedCount = services.filter(
+                                        i =>
+                                          (i.isDisplayed === true || i.isDisplayed === "true") &&
+                                          (!isEditMode || i.id !== selectedService?.id)
+                                      ).length;
+                  
+                                      if (!canSetDisplayed(newValue, selectedService?.id)) {
+                                        toast.error("You already have 3 displayed services. Uncheck another one first.");
+                                        return;
+                                      }
+                                      setSelectedService(prev => ({ ...prev, isDisplayed: newValue }));
+                                    }}
                   className="w-4 h-4 text-[#126280] border-gray-300 rounded focus:ring-[#126280]"
                 />
                 <label htmlFor="isDisplayed" className="text-sm font-medium text-gray-700 cursor-pointer">
