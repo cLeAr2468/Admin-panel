@@ -112,11 +112,11 @@ const ManageServices = () => {
   const canSetDisplayed = (desired = true, editingServiceId = null) => {
     if (!desired) return true;
 
-    const displayedCount = services.filter(i => i.isDisplayed === true || i.isDisplayed === "true").length;
+    const displayedCount = services.filter(s => s.isDisplayed === true || s.isDisplayed === "true").length;
     if (editingServiceId) {
 
       const currentlyDisplayed = services.some(
-        s => s.id === editingServiceId && (i.isDisplayed === true || i.isDisplayed === "true")
+        s => s.id === editingServiceId && (s.isDisplayed === true || s.isDisplayed === "true")
       );
       if (currentlyDisplayed) return true;
 
@@ -144,8 +144,73 @@ const ManageServices = () => {
         toast.error("Only 3 services can be displayed. Unselect another one first. This feature will be saved as Hidden.");
       }
 
-      if (isEditMode && selectedService) {
+      const formDataToSend = new FormData();
+      formDataToSend.append("shop_id", adminData.shop_id);
+      formDataToSend.append("service_name", formData.title);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
 
+      if (formData.image) {
+        formDataToSend.append("image", formData.image);
+      }
+
+      if (isEditMode && selectedService) {
+        const formDataToSend = new FormData();
+        formDataToSend.append("service_name", formData.title);
+        formDataToSend.append("service_description", formData.description);
+        formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
+
+        if (!formData.image && selectedService.image_url) {
+          formDataToSend.append("old_image_url", selectedService.image_url);
+        }
+
+        if (formData.image) {
+          formDataToSend.append("image", formData.image);
+        }
+
+        const response = await fetchApiFormData(
+          `/api/auth/update-service/${selectedService.id}`,
+          formDataToSend,
+          { method: "PUT" }
+        );
+
+        if (!response || response.success === false) {
+          throw new Error(response?.message || "Update failed.");
+        }
+
+        setServices(services.map(s =>
+          s.id === selectedService.id
+            ? {
+              ...s,
+              title: formData.title,
+              description: formData.description,
+              image_url: response.data.image_url || s.image_url,
+              isDisplayed: formData.isDisplayed
+            }
+            : s
+        ));
+
+        toast.success("Service updated successfully!");
+
+        // reset
+        setFormData({
+          title: "",
+          description: "",
+          image: null,
+          isDisplayed: false,
+        });
+        setImagePreview(null);
+        setIsDialogOpen(false);
+        setIsEditMode(false);
+        setSelectedService(null);
+
+        return;
+      } else {
+        setIsLoading(true);
+        const response = await fetchApiFormData('/api/auth/add-service', formDataToSend);
+      }
+
+      if (isEditMode && selectedService) {
         setServices(services.map(s =>
           s.id === selectedService.id
             ? {
@@ -159,30 +224,14 @@ const ManageServices = () => {
         ));
         toast.success("Service updated successfully");
       } else {
-
-        setIsLoading(true);
-
-        const formDataToSend = new FormData();
-        formDataToSend.append("shop_id", adminData.shop_id);
-        formDataToSend.append("service_name", formData.title);
-        formDataToSend.append("description", formData.description);
-        formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
-
-        if (formData.image) {
-          formDataToSend.append("image", formData.image);
-        }
-
-
-        const result = await fetchApiFormData('/api/auth/add-service', formDataToSend);
-
         setServices((prev) => [
           ...prev,
           {
-            id: result.data.service_id,
-            title: result.data.service_name,
-            description: result.data.description,
-            image_url: result.data.image_url,
-            isDisplayed: result.data.is_displayed === "true",
+            id: response.data.service_id,
+            title: response.data.service_name,
+            description: response.data.description,
+            image_url: response.data.image_url,
+            isDisplayed: response.data.is_displayed === "true",
           },
         ]);
 
@@ -545,20 +594,20 @@ const ManageServices = () => {
                   type="checkbox"
                   id="isDisplayed"
                   checked={formData.isDisplayed}
-                                    onChange={(e) => {
-                                      const newValue = e.target.checked;
-                                      const displayedCount = services.filter(
-                                        i =>
-                                          (i.isDisplayed === true || i.isDisplayed === "true") &&
-                                          (!isEditMode || i.id !== selectedService?.id)
-                                      ).length;
-                  
-                                      if (!canSetDisplayed(newValue, selectedService?.id)) {
-                                        toast.error("You already have 3 displayed services. Uncheck another one first.");
-                                        return;
-                                      }
-                                      setSelectedService(prev => ({ ...prev, isDisplayed: newValue }));
-                                    }}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    const displayedCount = services.filter(
+                      i =>
+                        (i.isDisplayed === true || i.isDisplayed === "true") &&
+                        (!isEditMode || i.id !== selectedService?.id)
+                    ).length;
+
+                    if (!canSetDisplayed(newValue, selectedService?.id)) {
+                      toast.error("You already have 3 displayed services. Uncheck another one first.");
+                      return;
+                    }
+                    setFormData(prev => ({ ...prev, isDisplayed: newValue }));
+                  }}
                   className="w-4 h-4 text-[#126280] border-gray-300 rounded focus:ring-[#126280]"
                 />
                 <label htmlFor="isDisplayed" className="text-sm font-medium text-gray-700 cursor-pointer">
