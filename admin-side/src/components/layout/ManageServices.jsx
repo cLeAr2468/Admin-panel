@@ -284,21 +284,39 @@ const ManageServices = () => {
     }
   };
 
-  const handleSaveDisplaySettings = () => {
+  const handleSaveDisplaySettings = async () => {
     if (tempSelectedServices.length !== 3) {
       toast.error("Please select exactly 3 services to display");
       return;
     }
 
-    const updatedServices = services.map(s => ({
-      ...s,
-      isDisplayed: tempSelectedServices.includes(s.id)
-    }));
+    try {
+      setIsLoading(true);
 
-    setServices(updatedServices);
-    setIsSelectionMode(false);
-    setTempSelectedServices([]);
-    toast.success("Display settings saved successfully!");
+      const response = await fetchApi(`/api/auth/update-services-display-settings/${adminData.shop_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ displayedServicesIds: tempSelectedServices }),
+      });
+
+      if (!response || response === false) {
+        throw new Error(response?.message || "Failed to update display setting!");
+      }
+
+      const updatedServices = services.map(s => ({
+        ...s,
+        isDisplayed: tempSelectedServices.includes(s.id)
+      }));
+
+      setServices(updatedServices);
+      setIsSelectionMode(false);
+      setTempSelectedServices([]);
+      toast.success("Display settings saved successfully!");
+    } catch (error) {
+      console.error("handleSaveDisplaySettings error:", error);
+      toast.error(error.message || "Failed to save display settings");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartSelection = () => {
