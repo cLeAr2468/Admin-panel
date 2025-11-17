@@ -177,34 +177,6 @@ const ManageServices = () => {
         if (!response || response.success === false) {
           throw new Error(response?.message || "Update failed.");
         }
-
-        setServices(services.map(s =>
-          s.id === selectedService.id
-            ? {
-              ...s,
-              title: formData.title,
-              description: formData.description,
-              image_url: response.data.image_url || s.image_url,
-              isDisplayed: formData.isDisplayed
-            }
-            : s
-        ));
-
-        toast.success("Service updated successfully!");
-
-        // reset
-        setFormData({
-          title: "",
-          description: "",
-          image: null,
-          isDisplayed: false,
-        });
-        setImagePreview(null);
-        setIsDialogOpen(false);
-        setIsEditMode(false);
-        setSelectedService(null);
-
-        return;
       } else {
         setIsLoading(true);
         const response = await fetchApiFormData('/api/auth/add-service', formDataToSend);
