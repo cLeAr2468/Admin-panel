@@ -155,10 +155,42 @@ const ManagePrice = () => {
         toast.error("Only 3 services can be displayed. Unselect another one first. This feature will be saved as Hidden.");
       }
 
-      if (isEditMode) {
+      if (isEditMode && selectedPrice) {
+        const formDataToSend = new FormData();
+        formDataToSend.append("categories", formData.category);
+        formDataToSend.append("description", formData.description)
+        formDataToSend.append("price", formData.price);
+        formDataToSend.append("pricing_label", formData.unit);
+        formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
+
+        if (!formData.image && selectedPrice.image_url) {
+          formData.append("old_image_url", selectedPrice.image_url);
+        }
+
+        if (formData.image) {
+          formDataToSend.append("image", formData.image);
+        }
+
+        const response = await fetchApiFormData(`/api/auth/update-price/${selectedPrice.id}`,
+          formDataToSend,
+          { method: "PUT" }
+        );
+
+        if (!response || response.success === false) {
+          throw new Error(response?.message || "Update failed.")
+        }
+
         setPrices(prices.map(p =>
           p.id === selectedPrice.id
-            ? { ...p, category: formData.category, description: formData.description, price: formData.price, unit: formData.unit, image_url: imagePreview || p.image_url, isDisplayed: formData.isDisplayed }
+            ? {
+              ...p,
+              category: formData.category,
+              description: formData.description,
+              price: formData.price,
+              unit: formData.unit,
+              image_url: imagePreview || p.image_url,
+              isDisplayed: formData.isDisplayed
+            }
             : p
         ));
         toast.success("Price updated successfully");
