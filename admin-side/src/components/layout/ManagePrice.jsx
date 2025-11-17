@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, X, Save, Eye, CheckCircle, Upload } fr
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
 import { AuthContext } from "@/context/AuthContext";
-import { fetchApiFormData } from "@/lib/api";
+import { fetchApi, fetchApiFormData } from "@/lib/api";
 
 const ManagePrice = () => {
   const navigate = useNavigate();
@@ -58,6 +58,39 @@ const ManagePrice = () => {
     isDisplayed: true,
   });
 
+  const loadPricesItems = async () => {
+    if (!adminData?.shop_id) return;
+    setIsLoading(true);
+    try {
+      const response = await fetchApi(`/api/auth/get-all-prices/${adminData.shop_id}`);
+      if (!response || response.success === false) {
+        throw new Error(res.message || "Failed to fetch prices items!");
+      }
+
+      const items = (response.data || []).map((i) => ({
+        id: i.pricing_id,
+        category: i.categories,
+        description: i.description,
+        price: i.price,
+        unit: i.pricing_label,
+        image_url: i.image_url,
+        isDisplayed: i.is_displayed === "true",
+      }));
+
+      setPrices(items);
+    } catch (error) {
+      console.log("ManagePrices - loadPricesItems error:", error);
+      toast.error(error.message || "Unable to load prices items!");
+      setPrices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadPricesItems();
+  }, [adminData]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -86,6 +119,22 @@ const ManagePrice = () => {
     }
   };
 
+  const canSetDisplayed = (desired = true, editingPricingId = null) => {
+    if (!desired) return true;
+
+    const displayedCount = prices.filter(p => p.isDisplayed === true || p.isDisplayed === "true").length;
+    if (editingPricingId) {
+
+      const currentlyDisplayed = prices.some(
+        p => p.id === editingPricingId && (p.isDisplayed === true || p.isDisplayed === "true")
+      );
+      if (currentlyDisplayed) return true;
+
+    }
+    return displayedCount < 3;
+  };
+
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -97,6 +146,13 @@ const ManagePrice = () => {
     try {
       if (!adminData?.shop_id) {
         throw new Error("Shop information not available. Please reload or login.");
+      }
+
+      const wantDisplay = !!formData.isDisplayed;
+      const editingId = isEditMode && selectedPrice ? selectedPrice.id : null;
+      if (!canSetDisplayed(wantDisplay, editingId)) {
+        setFormData(prev => ({ ...prev, isDisplayed: false }));
+        toast.error("Only 3 services can be displayed. Unselect another one first. This feature will be saved as Hidden.");
       }
 
       if (isEditMode) {
@@ -163,7 +219,7 @@ const ManagePrice = () => {
       price: price.price,
       unit: price.unit || "per load",
       image: null,
-      isDisplayed: price.isDisplayed !== undefined ? price.isDisplayed : true,
+      isDisplayed: price.isDisplayed === true || price.isDisplayed === "true",
     });
     setImagePreview(price.image_url || null);
     setIsEditMode(true);
@@ -219,7 +275,7 @@ const ManagePrice = () => {
       price: "",
       unit: "per load",
       image: null,
-      isDisplayed: true,
+      isDisplayed: false,
     });
     setImagePreview(null);
     setIsEditMode(false);
@@ -534,7 +590,20 @@ const ManagePrice = () => {
                   type="checkbox"
                   id="isDisplayed"
                   checked={formData.isDisplayed}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isDisplayed: e.target.checked }))}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    const displayedCount = prices.filter(
+                      i =>
+                        (i.isDisplayed === true || i.isDisplayed === "true") &&
+                        (!isEditMode || i.id !== selectedPrice?.id)
+                    ).length;
+
+                    if (!canSetDisplayed(newValue, selectedPrice?.id)) {
+                      toast.error("You already have 3 displayed services. Uncheck another one first.");
+                      return;
+                    }
+                    setFormData(prev => ({ ...prev, isDisplayed: newValue }));
+                  }}
                   className="w-4 h-4 text-[#126280] border-gray-300 rounded focus:ring-[#126280]"
                 />
                 <label htmlFor="isDisplayed" className="text-sm font-medium text-gray-700 cursor-pointer">
