@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Pencil, Trash2, X, Save, CheckCircle, CreditCard, Upload, Banknote } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Save, Eye, CheckCircle, CreditCard, Upload, Banknote } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
 
@@ -31,24 +31,24 @@ const PaymentMethod = () => {
       isStatic: false,
       qrCodeImage: null,
     },
-    {
-      id: 3,
-      name: "PayMaya",
-      accountName: "Laundry Shop",
-      accountNumber: "09987654321",
-      description: "Scan QR code or send to mobile number",
-      isDisplayed: true,
-      isStatic: false,
-      qrCodeImage: null,
-    },
-    // Bank Transfer removed per request
+    // {
+    //   id: 3,
+    //   name: "PayMaya",
+    //   accountName: "Laundry Shop",
+    //   accountNumber: "09987654321",
+    //   description: "Scan QR code or send to mobile number",
+    //   isDisplayed: true,
+    //   isStatic: false,
+    //   qrCodeImage: null,
+    // },
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [tempSelectedMethods, setTempSelectedMethods] = useState([]);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     accountName: "",
@@ -71,7 +71,7 @@ const PaymentMethod = () => {
         toast.error("Please upload an image file");
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData((prev) => ({ ...prev, qrCodeImage: reader.result }));
@@ -88,24 +88,24 @@ const PaymentMethod = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    
+
     if (!formData.name || !formData.accountName || !formData.accountNumber) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     if (isEditMode) {
-      setPaymentMethods(paymentMethods.map(m => 
-        m.id === selectedMethod.id 
-          ? { 
-              ...m, 
-              name: formData.name, 
-              accountName: formData.accountName, 
-              accountNumber: formData.accountNumber, 
-              description: formData.description, 
-              isDisplayed: formData.isDisplayed,
-              qrCodeImage: formData.qrCodeImage !== null ? formData.qrCodeImage : m.qrCodeImage
-            }
+      setPaymentMethods(paymentMethods.map(m =>
+        m.id === selectedMethod.id
+          ? {
+            ...m,
+            name: formData.name,
+            accountName: formData.accountName,
+            accountNumber: formData.accountNumber,
+            description: formData.description,
+            isDisplayed: formData.isDisplayed,
+            qrCodeImage: formData.qrCodeImage !== null ? formData.qrCodeImage : m.qrCodeImage
+          }
           : m
       ));
       toast.success("Payment method updated successfully");
@@ -123,7 +123,7 @@ const PaymentMethod = () => {
       setPaymentMethods([...paymentMethods, newMethod]);
       toast.success("Payment method added successfully");
     }
-    
+
     setFormData({
       name: "",
       accountName: "",
@@ -157,21 +157,6 @@ const PaymentMethod = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id) => {
-    const method = paymentMethods.find(m => m.id === id);
-    if (method?.isStatic) {
-      toast.error("Cannot delete static payment methods");
-      return;
-    }
-    
-    if (!window.confirm("Are you sure you want to delete this payment method?")) {
-      return;
-    }
-
-    setPaymentMethods(paymentMethods.filter(m => m.id !== id));
-    toast.success("Payment method deleted successfully");
-  };
-
   const handleToggleSelection = (methodId) => {
     if (tempSelectedMethods.includes(methodId)) {
       setTempSelectedMethods(tempSelectedMethods.filter(id => id !== methodId));
@@ -194,7 +179,7 @@ const PaymentMethod = () => {
       ...m,
       isDisplayed: tempSelectedMethods.includes(m.id)
     }));
-    
+
     setPaymentMethods(updatedMethods);
     setIsSelectionMode(false);
     setTempSelectedMethods([]);
@@ -212,11 +197,25 @@ const PaymentMethod = () => {
     setTempSelectedMethods([]);
   };
 
+  const openAddDialog = () => {
+    setFormData({
+      name: "",
+      accountName: "",
+      accountNumber: "",
+      description: "",
+      isDisplayed: true,
+      qrCodeImage: null,
+    });
+    setQrCodePreview(null);
+    setIsEditMode(false);
+    setSelectedMethod(null);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
-      
+
       <div className="flex-1 overflow-auto">
         <div className="p-6">
           {/* Header */}
@@ -232,7 +231,13 @@ const PaymentMethod = () => {
               </Button>
               <h1 className="text-3xl font-bold text-[#126280]">Payment Methods</h1>
             </div>
-            {/* View Content button removed */}
+            <Button
+              onClick={() => setShowPaymentDialog(true)}
+              className="bg-[#126280] hover:bg-[#126280]/80"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              View Content
+            </Button>
           </div>
 
           {/* Payment Methods Section */}
@@ -273,6 +278,15 @@ const PaymentMethod = () => {
                     >
                       Select 3 to Display
                     </Button>
+                    {paymentMethods.length < 3 && (
+                      <Button
+                        onClick={openAddDialog}
+                        className="bg-[#0B6B87] hover:bg-[#0B6B87]/90 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Payment Method
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -288,112 +302,97 @@ const PaymentMethod = () => {
                 paymentMethods.map((method) => {
                   const isSelected = tempSelectedMethods.includes(method.id);
                   return (
-                  <Card 
-                    key={method.id} 
-                    className={`border shadow-sm transition-all bg-white relative ${
-                      isSelectionMode 
-                        ? isSelected 
-                          ? 'border-green-500 border-2 shadow-lg cursor-pointer' 
+                    <Card
+                      key={method.id}
+                      className={`border shadow-sm transition-all bg-white relative ${isSelectionMode
+                        ? isSelected
+                          ? 'border-green-500 border-2 shadow-lg cursor-pointer'
                           : 'border-gray-200 hover:border-[#0B6B87] cursor-pointer'
                         : 'border-gray-200 hover:shadow-md'
-                    }`}
-                    onClick={() => isSelectionMode && handleToggleSelection(method.id)}
-                  >
-                    <CardContent className="p-6">
-                      {/* Display Status Badge or Selection Checkbox */}
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        {method.isStatic && (
-                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-                            Static
-                          </span>
-                        )}
-                        {isSelectionMode ? (
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                            isSelected 
-                              ? 'bg-green-500 border-green-500' 
+                        }`}
+                      onClick={() => isSelectionMode && handleToggleSelection(method.id)}
+                    >
+                      <CardContent className="p-6">
+                        {/* Display Status Badge or Selection Checkbox */}
+                        <div className="absolute top-3 right-3 flex gap-2">
+                          {method.isStatic && (
+                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                              Static
+                            </span>
+                          )}
+                          {isSelectionMode ? (
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected
+                              ? 'bg-green-500 border-green-500'
                               : 'bg-white border-gray-300'
-                          }`}>
-                            {isSelected && (
-                              <CheckCircle className="h-4 w-4 text-white" />
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            {method.isDisplayed !== false ? (
-                              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                                Displayed
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                                Hidden
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-start gap-3 mb-4 pr-20">
-                        {method.name === "Cash" ? (
-                          <Banknote className="h-8 w-8 text-[#0B6B87] flex-shrink-0 mt-1" />
-                        ) : (
-                          <CreditCard className="h-8 w-8 text-[#0B6B87] flex-shrink-0 mt-1" />
-                        )}
-                        <div className="flex-1">
-                          <h3 className="font-bold text-xl text-[#0B6B87] mb-2">
-                            {method.name}
-                          </h3>
-                          <div className="space-y-1 text-sm text-gray-700">
-                            <p><span className="font-medium">Account Name:</span> {method.accountName}</p>
-                            <p><span className="font-medium">Account Number:</span> {method.accountNumber}</p>
-                            {method.description && !method.qrCodeImage && (
-                              <p className="text-gray-600 mt-2">{method.description}</p>
-                            )}
-                            {method.qrCodeImage && (
-                              <div className="mt-3">
-                                <p className="font-medium mb-2">QR Code:</p>
-                                <img 
-                                  src={method.qrCodeImage} 
-                                  alt="QR Code" 
-                                  className="w-40 h-40 object-contain border-2 border-gray-200 rounded-lg"
-                                />
-                              </div>
-                            )}
+                              }`}>
+                              {isSelected && (
+                                <CheckCircle className="h-4 w-4 text-white" />
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              {method.isDisplayed !== false ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                                  Displayed
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                                  Hidden
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-start gap-3 mb-4 pr-20">
+                          {method.name === "Cash" ? (
+                            <Banknote className="h-8 w-8 text-[#0B6B87] flex-shrink-0 mt-1" />
+                          ) : (
+                            <CreditCard className="h-8 w-8 text-[#0B6B87] flex-shrink-0 mt-1" />
+                          )}
+                          <div className="flex-1">
+                            <h3 className="font-bold text-xl text-[#0B6B87] mb-2">
+                              {method.name}
+                            </h3>
+                            <div className="space-y-1 text-sm text-gray-700">
+                              <p><span className="font-medium">Account Name:</span> {method.accountName}</p>
+                              <p><span className="font-medium">Account Number:</span> {method.accountNumber}</p>
+                              {method.description && !method.qrCodeImage && (
+                                <p className="text-gray-600 mt-2">{method.description}</p>
+                              )}
+                              {method.qrCodeImage && (
+                                <div className="mt-3">
+                                  <p className="font-medium mb-2">QR Code:</p>
+                                  <img
+                                    src={method.qrCodeImage}
+                                    alt="QR Code"
+                                    className="w-40 h-40 object-contain border-2 border-gray-200 rounded-lg"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      {!isSelectionMode && method.name !== 'Cash' && (
-                        <div className="flex gap-3 mt-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(method);
-                            }}
-                            className="flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                          {method.name !== 'GCash' && method.name !== 'PayMaya' && (
+
+                        {!isSelectionMode && (
+                          <div className="flex gap-3 mt-4">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(method.id);
+                                handleEdit(method);
                               }}
-                              className="flex-1 text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
+                              className={`flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white ${method.isStatic ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={method.isStatic}
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
                             </Button>
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   );
                 })
               )}
@@ -402,7 +401,78 @@ const PaymentMethod = () => {
         </div>
       </div>
 
-      {/* View Content feature removed */}
+      {/* View Payment Methods Content Dialog */}
+      {showPaymentDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-4xl bg-white shadow-2xl rounded-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b bg-[#0B6B87]">
+              <h2 className="text-2xl font-bold text-white">Payment Methods</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPaymentDialog(false)}
+                className="text-white hover:bg-white/20"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="p-8">
+              <h1 className="text-4xl font-bold text-[#0B6B87] mb-4">Payment Options</h1>
+              <p className="text-gray-600 mb-8">Choose your preferred payment method below</p>
+
+              {/* Payment Methods */}
+              <div className="space-y-6">
+                {paymentMethods.filter(m => m.isDisplayed !== false).map((method) => (
+                  <div key={method.id} className="flex items-start gap-4 p-6 bg-gray-50 rounded-lg border-2 border-[#0B6B87]">
+                    {method.name === "Cash" ? (
+                      <Banknote className="h-8 w-8 text-[#0B6B87] flex-shrink-0 mt-1" />
+                    ) : (
+                      <CreditCard className="h-8 w-8 text-[#0B6B87] flex-shrink-0 mt-1" />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-bold text-2xl text-[#0B6B87] mb-3">
+                        {method.name}
+                      </h3>
+                      <div className="space-y-2 text-gray-700">
+                        <p className="text-lg">
+                          <span className="font-semibold">Account Name:</span> {method.accountName}
+                        </p>
+                        <p className="text-lg">
+                          <span className="font-semibold">Account Number:</span> {method.accountNumber}
+                        </p>
+                        {method.description && !method.qrCodeImage && (
+                          <p className="text-gray-600 mt-3">{method.description}</p>
+                        )}
+                        {method.qrCodeImage && (
+                          <div className="mt-4">
+                            <p className="font-semibold mb-3 text-lg">QR Code:</p>
+                            <img
+                              src={method.qrCodeImage}
+                              alt="Payment QR Code"
+                              className="w-64 h-64 object-contain border-2 border-[#0B6B87] rounded-lg shadow-md"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Close Button */}
+              <div className="flex justify-end mt-8 pt-6 border-t">
+                <Button
+                  onClick={() => setShowPaymentDialog(false)}
+                  className="bg-[#0B6B87] hover:bg-[#0B6B87]/90"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add/Edit Payment Method Dialog */}
       {isDialogOpen && (
@@ -493,9 +563,9 @@ const PaymentMethod = () => {
                 <div className="space-y-3">
                   {qrCodePreview ? (
                     <div className="relative">
-                      <img 
-                        src={qrCodePreview} 
-                        alt="QR Code Preview" 
+                      <img
+                        src={qrCodePreview}
+                        alt="QR Code Preview"
                         className="w-48 h-48 object-contain border-2 border-gray-300 rounded-lg"
                       />
                       <Button
