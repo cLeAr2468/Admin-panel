@@ -272,21 +272,38 @@ const ManagePrice = () => {
     }
   };
 
-  const handleSaveDisplaySettings = () => {
+  const handleSaveDisplaySettings = async () => {
     if (tempSelectedPrices.length !== 3) {
       toast.error("Please select exactly 3 prices to display");
       return;
     }
 
-    const updatedPrices = prices.map(p => ({
-      ...p,
-      isDisplayed: tempSelectedPrices.includes(p.id)
-    }));
+    try {
+      setIsLoading(true);
+      const response = await fetchApi(`/api/auth/update-prices-display-settings/${adminData.shop_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ displayedPricesIds: tempSelectedPrices }),
+      });
 
-    setPrices(updatedPrices);
-    setIsSelectionMode(false);
-    setTempSelectedPrices([]);
-    toast.success("Display settings saved successfully!");
+      if (!response || response === false) {
+        throw new Error(response?.message || "Failed to update display settings.");
+      }
+
+      const updatedPrices = prices.map(p => ({
+        ...p,
+        isDisplayed: tempSelectedPrices.includes(p.id)
+      }));
+
+      setPrices(updatedPrices);
+      setIsSelectionMode(false);
+      setTempSelectedPrices([]);
+      toast.success("Display settings saved successfully!");
+    } catch (error) {
+      console.log("handleSaveDisplaySettings error:", error)
+      toast.error(error.message || "Failed to save display settings");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartSelection = () => {
