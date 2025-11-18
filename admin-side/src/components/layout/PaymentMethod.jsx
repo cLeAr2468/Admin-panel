@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,49 +6,32 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Plus, Pencil, Trash2, X, Save, Eye, CheckCircle, CreditCard, Upload, Banknote } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
+import { AuthContext } from "@/context/AuthContext";
+import { fetchApi } from "@/lib/api";
 
 const PaymentMethod = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [paymentMethods, setPaymentMethods] = useState([
-    {
-      id: 1,
-      name: "Cash",
-      accountName: "Cash Payment",
-      accountNumber: "N/A",
-      description: "Pay with cash upon delivery or pickup",
-      isDisplayed: true,
-      isStatic: true,
-      qrCodeImage: null,
-    },
-    {
-      id: 2,
-      name: "GCash",
-      accountName: "Laundry Shop",
-      accountNumber: "09123456789",
-      description: "Scan QR code or send to mobile number",
-      isDisplayed: true,
-      isStatic: false,
-      qrCodeImage: null,
-    },
-    // {
-    //   id: 3,
-    //   name: "PayMaya",
-    //   accountName: "Laundry Shop",
-    //   accountNumber: "09987654321",
-    //   description: "Scan QR code or send to mobile number",
-    //   isDisplayed: true,
-    //   isStatic: false,
-    //   qrCodeImage: null,
-    // },
-  ]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+
+  const STATIC_CASH = {
+    id: 1,
+    name: "Cash",
+    accountName: "Cash Payment",
+    accountNumber: "N/A",
+    description: "Pay with cash upon delivery or pickup",
+    isDisplayed: true,
+    isStatic: true,
+    qrCodeImage: null,
+  };
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [tempSelectedMethods, setTempSelectedMethods] = useState([]);
-
+  const { adminData } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     name: "",
     accountName: "",
@@ -58,6 +41,44 @@ const PaymentMethod = () => {
     qrCodeImage: null,
   });
   const [qrCodePreview, setQrCodePreview] = useState(null);
+
+  const loadPaymentMethodItems = async () => {
+    if (!adminData?.shop_id) return;
+    setIsLoading(true);
+    try {
+      const response = await fetchApi(`/api/auth/get-all-paymeth-methods/${adminData.shop_id}`);
+      if (!response || response.success === false) {
+        throw new Error(response?.message || "Failed to fetch paymenth method items");
+      }
+
+      const items = (response.data || []).map((i) => ({
+        id: i.pm_id,
+        name: i.pm_name,
+        accountName: i.account_name,
+        accountNumber: i.account_number,
+        description: i.description,
+        isDisplayed: i.is_displayed === "true",
+        isStatic: i.is_static === "true",
+        qrCodeImage: i.qrCode_image_url
+      }));
+
+      // REMOVE any API item that attempts to use id=1
+      // const filteredAPIItems = items.filter(i => i.id !== 1);
+
+      const finalPaymentMethods = [STATIC_CASH, ...items];
+
+      setPaymentMethods(finalPaymentMethods);
+    } catch (error) {
+      console.error("PaymentMethod - loadPaymentMethodItems error:", error);
+      toast.error(error?.message || "Unable to load payment method items");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadPaymentMethodItems();
+  }, [adminData]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
