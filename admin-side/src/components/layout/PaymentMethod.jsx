@@ -46,7 +46,7 @@ const PaymentMethod = () => {
     if (!adminData?.shop_id) return;
     setIsLoading(true);
     try {
-      const response = await fetchApi(`/api/auth/get-all-paymeth-methods/${adminData.shop_id}`);
+      const response = await fetchApi(`/api/auth/get-all-payment-methods/${adminData.shop_id}`);
       if (!response || response.success === false) {
         throw new Error(response?.message || "Failed to fetch paymenth method items");
       }
@@ -124,17 +124,42 @@ const PaymentMethod = () => {
       if (!adminData?.shop_id) {
         throw new Error("Shop information not available. Please reload or login.")
       }
-      if (isEditMode) {
+      if (isEditMode && selectedMethod) {
+        const formDataToSend = new FormData();
+        formDataToSend.append("pm_name", formData.name);
+        formDataToSend.append("account_name", formData.accountName);
+        formDataToSend.append("account_number", formData.accountNumber);
+        formDataToSend.append("description", formData.description);
+        formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
+
+        if (!formData.qrCodeImage && selectedMethod.qrCode_image_url) {
+          formDataToSend.append("old_qrCode_image_url", selectedMethod.qrCode_image_url);
+        }
+
+        if (formData.qrCodeImage) {
+          formDataToSend.append("image", formData.qrCodeImage);
+        }
+
+        const res = await fetchApiFormData(`/api/auth/update-payment-method/${selectedMethod.id}`,
+          formDataToSend,
+          { method: "PUT" }
+        );
+
+        if (!res || res.success === false) {
+          throw new Error(res?.message || "Update failed")
+        }
+
         setPaymentMethods(paymentMethods.map(m =>
           m.id === selectedMethod.id
             ? {
               ...m,
-              name: formData.name,
-              accountName: formData.accountName,
-              accountNumber: formData.accountNumber,
-              description: formData.description,
-              isDisplayed: formData.isDisplayed,
-              qrCodeImage: formData.qrCodeImage !== null ? formData.qrCodeImage : m.qrCodeImage
+              name: res.data.pm_name,
+              accountName: res.data.account_name,
+              accountNumber: res.data.account_number,
+              description: res.data.description,
+              isDisplayed: res.data.is_displayed === "true",
+              isStatic: false,
+              qrCodeImage: res.data.qrCode_image_url,
             }
             : m
         ));
