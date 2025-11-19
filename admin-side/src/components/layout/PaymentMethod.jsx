@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, X, Save, Eye, CheckCircle, CreditCard,
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
 import { AuthContext } from "@/context/AuthContext";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, fetchApiFormData } from "@/lib/api";
 
 const PaymentMethod = () => {
   const navigate = useNavigate();
@@ -87,19 +87,24 @@ const PaymentMethod = () => {
 
   const handleQrCodeUpload = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error("Please upload an image file");
-        return;
-      }
+    if (!file) return;
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, qrCodeImage: reader.result }));
-        setQrCodePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, qrCodeImage: file }));
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setQrCodePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveQrCode = () => {
@@ -107,7 +112,7 @@ const PaymentMethod = () => {
     setQrCodePreview(null);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!formData.name || !formData.accountName || !formData.accountNumber) {
@@ -115,48 +120,74 @@ const PaymentMethod = () => {
       return;
     }
 
-    if (isEditMode) {
-      setPaymentMethods(paymentMethods.map(m =>
-        m.id === selectedMethod.id
-          ? {
-            ...m,
-            name: formData.name,
-            accountName: formData.accountName,
-            accountNumber: formData.accountNumber,
-            description: formData.description,
-            isDisplayed: formData.isDisplayed,
-            qrCodeImage: formData.qrCodeImage !== null ? formData.qrCodeImage : m.qrCodeImage
-          }
-          : m
-      ));
-      toast.success("Payment method updated successfully");
-    } else {
-      const newMethod = {
-        id: paymentMethods.length > 0 ? Math.max(...paymentMethods.map(m => m.id)) + 1 : 1,
-        name: formData.name,
-        accountName: formData.accountName,
-        accountNumber: formData.accountNumber,
-        description: formData.description,
-        isDisplayed: formData.isDisplayed,
-        isStatic: false,
-        qrCodeImage: formData.qrCodeImage,
-      };
-      setPaymentMethods([...paymentMethods, newMethod]);
-      toast.success("Payment method added successfully");
-    }
+    try {
+      if (!adminData?.shop_id) {
+        throw new Error("Shop information not available. Please reload or login.")
+      }
+      if (isEditMode) {
+        setPaymentMethods(paymentMethods.map(m =>
+          m.id === selectedMethod.id
+            ? {
+              ...m,
+              name: formData.name,
+              accountName: formData.accountName,
+              accountNumber: formData.accountNumber,
+              description: formData.description,
+              isDisplayed: formData.isDisplayed,
+              qrCodeImage: formData.qrCodeImage !== null ? formData.qrCodeImage : m.qrCodeImage
+            }
+            : m
+        ));
+        toast.success("Payment method updated successfully");
+      } else {
+        setIsLoading(true);
+        const formDataToSend = new FormData();
+        formDataToSend.append("shop_id", adminData.shop_id);
+        formDataToSend.append("pm_name", formData.name);
+        formDataToSend.append("account_name", formData.accountName);
+        formDataToSend.append("account_number", formData.accountNumber);
+        formDataToSend.append("description", formData.description);
+        formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
+        formDataToSend.append("is_static", "false");
 
-    setFormData({
-      name: "",
-      accountName: "",
-      accountNumber: "",
-      description: "",
-      isDisplayed: true,
-      qrCodeImage: null,
-    });
-    setQrCodePreview(null);
-    setIsDialogOpen(false);
-    setIsEditMode(false);
-    setSelectedMethod(null);
+        if (formData.qrCodeImage) {
+          formDataToSend.append("image", formData.qrCodeImage);
+        }
+
+        const res = await fetchApiFormData('/api/auth/add-payment-method', formDataToSend);
+
+        const newMethod = {
+          id: paymentMethods.length > 0 ? Math.max(...paymentMethods.map(m => m.id)) + 1 : 1,
+          name: res.data.pm_name,
+          accountName: res.data.account_name,
+          accountNumber: res.data.account_number,
+          description: res.data.description,
+          isDisplayed: res.data.is_displayed === "true",
+          isStatic: false,
+          qrCodeImage: res.data.qrCode_image_url,
+        };
+        setPaymentMethods([...paymentMethods, newMethod]);
+        toast.success("Payment method added successfully");
+      }
+
+      setFormData({
+        name: "",
+        accountName: "",
+        accountNumber: "",
+        description: "",
+        isDisplayed: true,
+        qrCodeImage: null,
+      });
+      setQrCodePreview(null);
+      setIsDialogOpen(false);
+      setIsEditMode(false);
+      setSelectedMethod(null);
+    } catch (error) {
+      console.error("Add payment method error:", error);
+      toast.error(error.message || "Server error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEdit = (method) => {
