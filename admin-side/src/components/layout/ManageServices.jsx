@@ -177,12 +177,7 @@ const ManageServices = () => {
         if (!response || response.success === false) {
           throw new Error(response?.message || "Update failed.");
         }
-      } else {
-        setIsLoading(true);
-        const response = await fetchApiFormData('/api/auth/add-service', formDataToSend);
-      }
 
-      if (isEditMode && selectedService) {
         setServices(services.map(s =>
           s.id === selectedService.id
             ? {
@@ -196,6 +191,9 @@ const ManageServices = () => {
         ));
         toast.success("Service updated successfully");
       } else {
+        setIsLoading(true);
+        const response = await fetchApiFormData('/api/auth/add-service', formDataToSend);
+
         setServices((prev) => [
           ...prev,
           {
@@ -209,7 +207,6 @@ const ManageServices = () => {
 
         toast.success("Service added successfully!");
       }
-
 
       setFormData({
         title: "",
