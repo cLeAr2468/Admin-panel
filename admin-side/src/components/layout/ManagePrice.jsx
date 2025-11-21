@@ -164,7 +164,7 @@ const ManagePrice = () => {
         formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
 
         if (!formData.image && selectedPrice.image_url) {
-          formData.append("old_image_url", selectedPrice.image_url);
+          formDataToSend.append("old_image_url", selectedPrice.image_url);
         }
 
         if (formData.image) {

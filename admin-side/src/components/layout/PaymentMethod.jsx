@@ -82,6 +82,7 @@ const PaymentMethod = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -120,11 +121,28 @@ const PaymentMethod = () => {
       return;
     }
 
+    const allowedNames = ["GCash", "PayMaya"];
+
+    if (
+      !isEditMode && // Only validate name for new non-static methods
+      !allowedNames.includes(formData.name)
+    ) {
+      toast.error("Payment Method must be 'GCash' or 'PayMaya' only!");
+      return;
+    }
+
     try {
       if (!adminData?.shop_id) {
         throw new Error("Shop information not available. Please reload or login.")
       }
       if (isEditMode && selectedMethod) {
+        if (
+          !isEditMode && // Only validate name for new non-static methods
+          !allowedNames.includes(formData.name)
+        ) {
+          toast.error("Payment Method Name must be 'GCash' or 'PayMaya'");
+          return;
+        }
         const formDataToSend = new FormData();
         formDataToSend.append("pm_name", formData.name);
         formDataToSend.append("account_name", formData.accountName);
@@ -246,21 +264,33 @@ const PaymentMethod = () => {
     }
   };
 
-  const handleSaveDisplaySettings = () => {
-    // if (tempSelectedMethods.length !== 3) {
-    //   toast.error("Please select exactly 3 payment methods to display");
-    //   return;
-    // }
+  const handleSaveDisplaySettings = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetchApi(`/api/auth/update-mp-display-settings/${adminData.shop_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ displayPaymentMethodIds: tempSelectedMethods }),
+      });
 
-    const updatedMethods = paymentMethods.map(m => ({
-      ...m,
-      isDisplayed: tempSelectedMethods.includes(m.id)
-    }));
+      if (!res || res === false) {
+        throw new Error(res?.message || "Failed to update display settings");
 
-    setPaymentMethods(updatedMethods);
-    setIsSelectionMode(false);
-    setTempSelectedMethods([]);
-    toast.success("Display settings saved successfully!");
+      }
+      const updatedMethods = paymentMethods.map(m => ({
+        ...m,
+        isDisplayed: tempSelectedMethods.includes(m.id)
+      }));
+
+      setPaymentMethods(updatedMethods);
+      setIsSelectionMode(false);
+      setTempSelectedMethods([]);
+      toast.success("Display settings saved successfully!");
+    } catch (error) {
+      console.log("handleSaveDisplaySettings error:", error)
+      toast.error(error.message || "Failed to save display settings");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartSelection = () => {
@@ -596,7 +626,7 @@ const PaymentMethod = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="e.g., GCash, PayMaya, Bank Transfer"
+                  placeholder="e.g., GCash or PayMaya"
                   required
                   className="w-full"
                 />
@@ -649,7 +679,7 @@ const PaymentMethod = () => {
               {/* QR Code Upload */}
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  QR Code Image (Optional)
+                  QR Code Image
                 </label>
                 <div className="space-y-3">
                   {qrCodePreview ? (
