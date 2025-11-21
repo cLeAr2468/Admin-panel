@@ -42,53 +42,51 @@ function Inventory() {
   });
   const { adminData } = useContext(AuthContext);
 
-  // Static inventory data
+
   const [inventoryItems, setInventoryItems] = useState([
   ]);
 
 
-useEffect(() => {
-  const fetchInventory = async () => {
-    try {
-     
-      if (!adminData) {
-        console.log('Waiting for admin data...');
-        return;
+  useEffect(() => {
+    const fetchInventory = async () => {
+      if (!adminData?.shop_id) {
+        throw new Error("Shop information not available. Please reload or login.")
       }
+      try {
 
-      const response = await fetchApi('/api/auth/shop-inventory-items');
-      
-      console.log('Admin shop ID:', adminData.shop_id);
+        if (!adminData) {
+          console.log('Waiting for admin data...');
+          return;
+        }
 
-      if (response.success === false) {
-        throw new Error(`Error fetching inventory items: ${response.message}`);
+        const response = await fetchApi(`/api/auth/shop-inventory-items/${adminData.shop_id}`);
+
+        if (response.success === false) {
+          throw new Error(`Error fetching inventory items: ${response.message}`);
+        }
+
+        const items = response.data.map(item => {
+          return {
+            id: item.item_id,
+            shopId: item.shop_id,
+            itemName: item.item_name,
+            description: item.item_description,
+            quantity: parseInt(item.item_quantity, 10),
+            unitPrice: parseFloat(item.item_uPrice),
+            reorderLevel: parseFloat(item.item_reoderLevel, 10),
+            dateAdded: item.date_added
+          };
+        });
+
+        setInventoryItems(items);
+      } catch (error) {
+        console.error('Failed to fetch inventory items:', error);
+        setInventoryItems([]);
       }
-      
-      const filteredItems = response.data.filter(item => item.shop_id === adminData.shop_id);
-      
-      const items = filteredItems.map(item => {
-        return {
-          id: item.item_id,
-          shopId: item.shop_id,
-          itemName: item.item_name,
-          description: item.item_description,
-          quantity: parseInt(item.item_quantity, 10),
-          unitPrice: parseFloat(item.item_uPrice),
-          reorderLevel: parseFloat(item.item_reoderLevel, 10),
-          dateAdded: item.date_added
-        };
-      });
+    };
 
-      console.log('Fetched inventory items:', items);
-      setInventoryItems(items);
-    } catch (error) {
-      console.error('Failed to fetch inventory items:', error);
-      setInventoryItems([]);
-    }
-  };
-
-  fetchInventory();
-}, [adminData]); 
+    fetchInventory();
+  }, [adminData]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -97,79 +95,69 @@ useEffect(() => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
-    // const newItem = {
-    //   id: `INV${String(inventoryItems.length + 1).padStart(3, '0')}`,
-    //   itemName: formData.itemName,
-    //   description: formData.description,
-    //   quantity: parseInt(formData.quantity),
-    //   unitPrice: parseFloat(formData.unitPrice),
-    //   reorderLevel: parseInt(formData.reorderLevel),
-    //   dateAdded: new Date().toISOString().split('T')[0],
-    // };
-
-    // setInventoryItems((prev) => [...prev, newItem]);
+    if (!adminData?.shop_id) {
+      throw new Error("Shop information not available. Please reload or login.")
+    }
     try {
-  const response = await fetchApi('/api/auth/add-shop-inventory', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      shop_id: adminData.shop_id,
-      item_name: formData.itemName,
-      item_description: formData.description,
-      item_quantity: formData.quantity,
-      item_uPrice: formData.unitPrice,
-      item_reoderLevel: formData.reorderLevel,
-    }),
-  });
+      const response = await fetchApi('/api/auth/add-shop-inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop_id: adminData.shop_id,
+          item_name: formData.itemName,
+          item_description: formData.description,
+          item_quantity: formData.quantity,
+          item_uPrice: formData.unitPrice,
+          item_reoderLevel: formData.reorderLevel,
+        }),
+      });
 
-  if (!response || response.success === false) {
-    const msg = response?.message || 'Error adding item';
-    toast.error(msg);
-    throw new Error(msg);
-  } else {
-    toast.success("Item added successfully!");
-  setIsDialogOpen(false);
-  setFormData({
-    inventoryId: "",
-    itemName: "",
-    description: "",
-    quantity: "",
-    unitPrice: "",
-    reorderLevel: "",
-  });
+      if (!response || response.success === false) {
+        const msg = response?.message || 'Error adding item';
+        toast.error(msg);
+        throw new Error(msg);
+      } else {
+        toast.success("Item added successfully!");
+        setIsDialogOpen(false);
+        setFormData({
+          inventoryId: "",
+          itemName: "",
+          description: "",
+          quantity: "",
+          unitPrice: "",
+          reorderLevel: "",
+        });
 
-  const response = await fetchApi('/api/auth/shop-inventory-items');
+        const response = await fetchApi(`/api/auth/shop-inventory-items/${adminData.shop_id}`);
 
-          if (response.success === false) {
-            throw new Error(`Error fetching inventory items: ${response.message}`);
-          }
+        if (response.success === false) {
+          throw new Error(`Error fetching inventory items: ${response.message}`);
+        }
 
-          const filteredItems = response.data.filter(item => item.shop_id === adminData.shop_id);
-          const items = filteredItems.map(item => {
-            return {
-              id: item.item_id,
-              itemName: item.item_name,
-              description: item.item_description,
-              quantity: parseInt(item.item_quantity, 10),
-              unitPrice: parseFloat(item.item_uPrice),
-              reorderLevel: parseFloat(item.item_reoderLevel, 10),
-              dateAdded: item.date_added
-            };
-          });
-          console.log('Fetched inventory items:', items);
-          setInventoryItems(items);
-  }
+        const items = response.data.map(item => {
+          return {
+            id: item.item_id,
+            itemName: item.item_name,
+            description: item.item_description,
+            quantity: parseInt(item.item_quantity, 10),
+            unitPrice: parseFloat(item.item_uPrice),
+            reorderLevel: parseFloat(item.item_reoderLevel, 10),
+            dateAdded: item.date_added
+          };
+        });
+        console.log('Fetched inventory items:', items);
+        setInventoryItems(items);
+      }
 
-} catch (error) {
-  console.error('Adding inventory item error:', error);
-  const msg =
-    error?.response?.data?.message || 
-    error?.message ||
-    'Something went wrong while adding the item';
+    } catch (error) {
+      console.error('Adding inventory item error:', error);
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Something went wrong while adding the item';
 
-  toast.error(msg);
-}
+      toast.error(msg);
+    }
 
   };
 
@@ -201,7 +189,7 @@ useEffect(() => {
 
     try {
       const updatePayload = {
-        // match API field names
+        shop_id: adminData.shop_id,
         item_name: formData.itemName,
         item_description: formData.description,
         item_quantity: parseInt(formData.quantity, 10) || 0,
@@ -231,13 +219,13 @@ useEffect(() => {
         prev.map((it) =>
           it.id === selectedItem.id
             ? {
-                ...it,
-                itemName: formData.itemName,
-                description: formData.description,
-                quantity: parseInt(formData.quantity, 10) || 0,
-                unitPrice: parseFloat(formData.unitPrice) || 0,
-                reorderLevel: parseInt(formData.reorderLevel, 10) || 0,
-              }
+              ...it,
+              itemName: formData.itemName,
+              description: formData.description,
+              quantity: parseInt(formData.quantity, 10) || 0,
+              unitPrice: parseFloat(formData.unitPrice) || 0,
+              reorderLevel: parseInt(formData.reorderLevel, 10) || 0,
+            }
             : it
         )
       );
@@ -298,7 +286,7 @@ useEffect(() => {
   };
 
   const filteredItems = inventoryItems.filter((item) => {
-    const matchesSearch = 
+    const matchesSearch =
       item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -348,154 +336,154 @@ useEffect(() => {
             <>
               {/* Search and Filters Section */}
               <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <div className="relative w-full md:w-[300px]">
-                <Input
-                  type="text"
-                  placeholder="Search by item name or ID..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <div className="relative w-full md:w-[300px]">
+                    <Input
+                      type="text"
+                      placeholder="Search by item name or ID..."
+                      className="pl-8"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <Select value={timeRange} onValueChange={setTimeRange}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                      <SelectValue placeholder="Select time range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All time</SelectItem>
+                      <SelectItem value="daily">Today</SelectItem>
+                      <SelectItem value="weekly">This week</SelectItem>
+                      <SelectItem value="monthly">This month</SelectItem>
+                      <SelectItem value="yearly">This year</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    variant="default"
+                    className="bg-[#126280] hover:bg-[#126280]/80"
+                    onClick={() => setIsDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Item
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Select time range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All time</SelectItem>
-                  <SelectItem value="daily">Today</SelectItem>
-                  <SelectItem value="weekly">This week</SelectItem>
-                  <SelectItem value="monthly">This month</SelectItem>
-                  <SelectItem value="yearly">This year</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto rounded-lg">
+                <Table className="[&_tbody_tr:hover]:bg-white">
+                  <TableHeader>
+                    <TableRow className="bg-[#126280] hover:bg-[#126280]">
+                      <TableHead className="text-white font-semibold">Item Name</TableHead>
+                      <TableHead className="text-white font-semibold">Quantity</TableHead>
+                      <TableHead className="text-white font-semibold">Unit Price</TableHead>
+                      <TableHead className="text-white font-semibold">Reorder Level</TableHead>
+                      <TableHead className="text-white font-semibold">Status</TableHead>
+                      <TableHead className="text-white font-semibold text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center">No items found</TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredItems.map((item) => (
+                        <TableRow key={item.id} className="bg-white">
+                          <TableCell>{item.itemName}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>₱{parseFloat(item.unitPrice).toFixed(2)}</TableCell>
+                          <TableCell>{item.reorderLevel}</TableCell>
+                          <TableCell>
+                            <Badge className={`${getStockBadgeColor(item.quantity, item.reorderLevel)} text-white`}>
+                              {getStockStatus(item.quantity, item.reorderLevel)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 justify-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-[#126280] hover:text-[#126280]/80"
+                                aria-label="View item"
+                                title="View"
+                                onClick={() => handleView(item)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-[#126280] hover:text-[#126280]/80"
+                                aria-label="Edit item"
+                                title="Edit"
+                                onClick={() => handleEdit(item)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
-              <Button
-                variant="default"
-                className="bg-[#126280] hover:bg-[#126280]/80"
-                onClick={() => setIsDialogOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
-            </div>
-          </div>
-
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto rounded-lg">
-            <Table className="[&_tbody_tr:hover]:bg-white">
-              <TableHeader>
-                <TableRow className="bg-[#126280] hover:bg-[#126280]">
-                  <TableHead className="text-white font-semibold">Item Name</TableHead>
-                  <TableHead className="text-white font-semibold">Quantity</TableHead>
-                  <TableHead className="text-white font-semibold">Unit Price</TableHead>
-                  <TableHead className="text-white font-semibold">Reorder Level</TableHead>
-                  <TableHead className="text-white font-semibold">Status</TableHead>
-                  <TableHead className="text-white font-semibold text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
                 {filteredItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center">No items found</TableCell>
-                  </TableRow>
+                  <div className="text-center p-4">No items found</div>
                 ) : (
                   filteredItems.map((item) => (
-                    <TableRow key={item.id} className="bg-white">
-                      <TableCell>{item.itemName}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell>₱{parseFloat(item.unitPrice).toFixed(2)}</TableCell>
-                      <TableCell>{item.reorderLevel}</TableCell>
-                      <TableCell>
+                    <div
+                      key={item.id}
+                      className="bg-white rounded-lg p-4 shadow-md space-y-3"
+                    >
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-semibold text-[#126280]">{item.itemName}</h3>
                         <Badge className={`${getStockBadgeColor(item.quantity, item.reorderLevel)} text-white`}>
                           {getStockStatus(item.quantity, item.reorderLevel)}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 justify-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-[#126280] hover:text-[#126280]/80"
-                            aria-label="View item"
-                            title="View"
-                            onClick={() => handleView(item)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-[#126280] hover:text-[#126280]/80"
-                            aria-label="Edit item"
-                            title="Edit"
-                            onClick={() => handleEdit(item)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      <div className="text-sm space-y-2">
+                        <p><span className="font-medium">ID:</span> {item.id}</p>
+                        <p><span className="font-medium">Description:</span> {item.description}</p>
+                        <p><span className="font-medium">Quantity:</span> {item.quantity}</p>
+                        <p><span className="font-medium">Unit Price:</span> ₱{item.unitPrice.toFixed(2)}</p>
+                        <p><span className="font-medium">Reorder Level:</span> {item.reorderLevel}</p>
+                      </div>
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-[#126280] hover:text-[#126280]/80"
+                          aria-label="View item"
+                          title="View"
+                          onClick={() => handleView(item)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-[#126280] hover:text-[#126280]/80"
+                          aria-label="Edit item"
+                          title="Edit"
+                          onClick={() => handleEdit(item)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   ))
                 )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-4">
-            {filteredItems.length === 0 ? (
-              <div className="text-center p-4">No items found</div>
-            ) : (
-              filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-lg p-4 shadow-md space-y-3"
-                >
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-[#126280]">{item.itemName}</h3>
-                    <Badge className={`${getStockBadgeColor(item.quantity, item.reorderLevel)} text-white`}>
-                      {getStockStatus(item.quantity, item.reorderLevel)}
-                    </Badge>
-                  </div>
-                  <div className="text-sm space-y-2">
-                    <p><span className="font-medium">ID:</span> {item.id}</p>
-                    <p><span className="font-medium">Description:</span> {item.description}</p>
-                    <p><span className="font-medium">Quantity:</span> {item.quantity}</p>
-                    <p><span className="font-medium">Unit Price:</span> ₱{item.unitPrice.toFixed(2)}</p>
-                    <p><span className="font-medium">Reorder Level:</span> {item.reorderLevel}</p>
-                  </div>
-                  <div className="flex items-center justify-end gap-2 pt-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-[#126280] hover:text-[#126280]/80"
-                      aria-label="View item"
-                      title="View"
-                      onClick={() => handleView(item)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-[#126280] hover:text-[#126280]/80"
-                      aria-label="Edit item"
-                      title="Edit"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+              </div>
             </>
           )}
         </div>
@@ -774,5 +762,3 @@ useEffect(() => {
 }
 
 export default Inventory;
-
-
