@@ -247,10 +247,10 @@ const PaymentMethod = () => {
   };
 
   const handleSaveDisplaySettings = () => {
-    if (tempSelectedMethods.length !== 3) {
-      toast.error("Please select exactly 3 payment methods to display");
-      return;
-    }
+    // if (tempSelectedMethods.length !== 3) {
+    //   toast.error("Please select exactly 3 payment methods to display");
+    //   return;
+    // }
 
     const updatedMethods = paymentMethods.map(m => ({
       ...m,
@@ -324,7 +324,7 @@ const PaymentMethod = () => {
                 <h2 className="text-2xl font-bold text-gray-800">Available Payment Methods</h2>
                 {isSelectionMode && (
                   <span className="text-sm text-gray-600">
-                    ({tempSelectedMethods.length}/3 selected)
+                    ({tempSelectedMethods.length} selected)
                   </span>
                 )}
               </div>
@@ -353,7 +353,7 @@ const PaymentMethod = () => {
                       variant="outline"
                       className="border-[#0B6B87] text-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
                     >
-                      Select 3 to Display
+                      Select Method to Display/Hide
                     </Button>
                     {paymentMethods.length < 3 && (
                       <Button
@@ -378,16 +378,30 @@ const PaymentMethod = () => {
               ) : (
                 paymentMethods.map((method) => {
                   const isSelected = tempSelectedMethods.includes(method.id);
+                  const isStaticAndDisplayed = method.isStatic && method.isDisplayed;
+
                   return (
                     <Card
                       key={method.id}
                       className={`border shadow-sm transition-all bg-white relative ${isSelectionMode
-                        ? isSelected
-                          ? 'border-green-500 border-2 shadow-lg cursor-pointer'
-                          : 'border-gray-200 hover:border-[#0B6B87] cursor-pointer'
+                        ? (isStaticAndDisplayed
+                          ? 'border-blue-500 border-2 cursor-default'
+                          : (isSelected
+                            ? 'border-green-500 border-2 shadow-lg cursor-pointer'
+                            : 'border-gray-200 hover:border-[#0B6B87] cursor-pointer'
+                          )
+                        )
                         : 'border-gray-200 hover:shadow-md'
                         }`}
-                      onClick={() => isSelectionMode && handleToggleSelection(method.id)}
+                      onClick={() => {
+                        if (isSelectionMode) {
+                          if (method.isStatic) {
+                            toast.info(`"${method.name}" is a static payment method and is always displayed.`);
+                          } else {
+                            handleToggleSelection(method.id);
+                          }
+                        }
+                      }}
                     >
                       <CardContent className="p-6">
                         {/* Display Status Badge or Selection Checkbox */}
@@ -397,7 +411,7 @@ const PaymentMethod = () => {
                               Static
                             </span>
                           )}
-                          {isSelectionMode ? (
+                          {isSelectionMode && !method.isStatic ? (
                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected
                               ? 'bg-green-500 border-green-500'
                               : 'bg-white border-gray-300'
