@@ -5,80 +5,82 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { fetchApi } from "@/lib/api";
 import { AuthContext } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const Login = () => {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [showForgotModal, setShowForgotModal] = useState(false);
-    const [resetEmail, setResetEmail] = useState("");
     const [resetMessage, setResetMessage] = useState("");
     const navigate = useNavigate();
     const { login } = useContext(AuthContext);
+    const [email, setEmail] = useState('');
 
-const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError("");
 
-    try {
-        const response = await fetchApi('/api/public/admin/login', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                emailOrUsername: username, 
-                password: password
-            })
-        });
-        
-        if (!response.message || !response.token) {
-            throw new Error("Invalid response from server");
+        try {
+            const response = await fetchApi('/api/public/admin/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    emailOrUsername: username,
+                    password: password
+                })
+            });
+
+            if (!response.message || !response.token) {
+                throw new Error("Invalid response from server");
+            }
+
+            const token = response.token.replace('Bearer ', '');
+            login(response.admin, token, response.apiKey);
+
+            navigate("/dashboard");
+
+        } catch (error) {
+            console.error('Login error:', error);
+            setError(error.message || "Invalid credentials. Please try again.");
         }
-
-        // const token = response.token.replace('Bearer ', '');
-        // // localStorage.setItem('token', token);
-        // login(response.token);
-        
-        // if (response.apiKey) {
-        //     // localStorage.setItem('apiKey', response.apiKey);
-        //     login(response.apiKey);
-        // }
-        
-        // if (response.admin) {
-        //     // localStorage.setItem('adminData', JSON.stringify(response.admin));
-        //     login(response.adminData);
-        // }
-
-        const token = response.token.replace('Bearer ', '');
-        login(response.admin, token, response.apiKey);
-
-        navigate("/dashboard");
-
-    } catch (error) {
-        console.error('Login error:', error);
-        setError(error.message || "Invalid credentials. Please try again.");
-    }
-};
+    };
 
     // Handle password reset submission
-    const handleResetSubmit = (e) => {
+    const handleResetSubmit = async (e) => {
         e.preventDefault();
         setResetMessage("");
-        
-        if (!resetEmail.trim()) {
+
+        if (!email.trim()) {
             setResetMessage("Please enter your email address");
             return;
         }
-        
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             setResetMessage("Please enter a valid email address");
             return;
         }
 
-        setResetMessage("If an account exists with this email, you will receive reset instructions.");
-        setTimeout(() => {
-            setShowForgotModal(false);
-            setResetEmail("");
-            setResetMessage("");
-        }, 3000);
+        try {
+            const res = await fetchApi('/api/public/forgot-password', {
+                method: 'POST',
+                body: JSON.stringify({ email }),
+            });
+
+            if (res.success === false) {
+                throw new Error(res?.message || "Reset password failed!");
+            }
+            toast.success("Reset password link is sent to your email!");
+            setEmail("");
+            setResetMessage("If an account exists with this email, you will receive reset instructions.");
+            setTimeout(() => {
+                setShowForgotModal(false);
+                setEmail, ("");
+                setResetMessage("");
+            }, 5000);
+        } catch (error) {
+            console.error("handleResetSubmit error", error);
+            throw error;
+        }
     };
 
     return (
@@ -180,7 +182,7 @@ const handleLogin = async (e) => {
                             <button
                                 onClick={() => {
                                     setShowForgotModal(false);
-                                    setResetEmail("");
+                                    setEmail("");
                                     setResetMessage("");
                                 }}
                                 className="text-gray-500 hover:text-gray-700"
@@ -196,8 +198,8 @@ const handleLogin = async (e) => {
                                 </label>
                                 <Input
                                     type="email"
-                                    value={resetEmail}
-                                    onChange={(e) => setResetEmail(e.target.value)}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Enter your email"
                                     className="bg-gray-100 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm md:text-base h-10 md:h-12 w-full"
                                     required
@@ -221,7 +223,7 @@ const handleLogin = async (e) => {
                                     type="button"
                                     onClick={() => {
                                         setShowForgotModal(false);
-                                        setResetEmail("");
+                                        setEmail("");
                                         setResetMessage("");
                                     }}
                                     className="flex-1 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-full"
