@@ -37,7 +37,10 @@ const Login = () => {
             const token = response.token.replace('Bearer ', '');
             login(response.admin, token, response.apiKey);
 
-            navigate("/dashboard");
+            setTimeout(() => {
+                toast.success("Login successfully!");
+                navigate("/dashboard");
+            }, 2000);
 
         } catch (error) {
             console.error('Login error:', error);
@@ -67,7 +70,7 @@ const Login = () => {
             });
 
             if (res.success === false) {
-                throw new Error(res?.message || "Reset password failed!");
+                throw new Error(res?.message || "Forgot password failed!");
             }
             toast.success("Reset password link is sent to your email!");
             setEmail("");
