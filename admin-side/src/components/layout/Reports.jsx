@@ -87,13 +87,10 @@ const Reports = () => {
   };
 
   const filteredSales = useMemo(() => salesRows.filter(r => inRange(r.date)), [fromDate, toDate]);
-  // Ensure itemRows is included as a dependency!
   const filteredItems = useMemo(() => {
-    // If itemRows is not an array yet (e.g., still []), return empty array
     if (!Array.isArray(itemRows)) return [];
-
     return itemRows.filter(r => inRange(r.dateAdded));
-  }, [itemRows, fromDate, toDate]); // <--- MUST INCLUDE ALL THREE!
+  }, [itemRows, fromDate, toDate]);
   const filteredTx = useMemo(() => transactionRows.filter(r => inRange(r.date)), [fromDate, toDate]);
 
   const salesTotals = useMemo(() => {
