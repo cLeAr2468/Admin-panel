@@ -130,17 +130,18 @@ const CustomerReceipt = ({ onClose }) => {
     }));
 
     if (type === 'checkbox' && name !== 'other_static_checkbox') {
-
-      setSelectedServices(prevServices => {
+    
+    setSelectedServices(prevServices => {
+        let newServices;
+        
         if (checked) {
-          const newServices = [...prevServices, name];
-          return newServices;
+            newServices = [...prevServices, name];
         } else {
-          const newServices = prevServices.filter(serviceName => serviceName !== name);
-          return newServices;
+            newServices = prevServices.filter(serviceName => serviceName !== name);
         }
-      });
-    }
+        return newServices;
+    });
+}
     let updates = {};
 
     if (type === 'checkbox') {
@@ -275,7 +276,7 @@ const CustomerReceipt = ({ onClose }) => {
         towels: parseInt(formData.towel) || 0,
         pillow_case: parseInt(formData.pillowCase) || 0,
         bed_sheets: parseInt(formData.bedSheets) || 0,
-        service: selectedServices.toString(),
+        service: selectedServices.join(', '),
         kg: formData.kl,
         num_items: parseInt(formData.itemCount) || 0,
         total_amount: parseFloat(formData.totalAmount) || 0

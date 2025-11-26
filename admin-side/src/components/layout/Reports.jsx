@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import moment from 'moment';
 import { AuthContext } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
+import { toast } from 'sonner';
 
 const getFirstDayOfYear = () => {
   const year = new Date().getFullYear();
@@ -25,6 +26,7 @@ const Reports = () => {
   const [fromDate, setFromDate] = useState(getFirstDayOfYear());
   const [toDate, setToDate] = useState(getCurrentDateString());
   const [itemRows, setItemRows] = useState([]);
+  const [transactionRows, setransactionRows] = useState([]);
   const { adminData } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -51,7 +53,47 @@ const Reports = () => {
 
       setItemRows(items);
     } catch (error) {
+      console.error("Reports - loadItems error:", error);
+      toast.error(error?.message || "Unable to load item records");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  const transformStatus = (status) => {
+    if (status === 'On Service') {
+      return 'Pending';
+    } else if (status === 'Ready to pick up') {
+      return 'Pending';
+    } else if (status === 'Laundry Done') {
+      return 'Completed';
+    } else {
+      return 'Cancelled';
+    }
+  }
+  const loadTransactions = async () => {
+    if (!adminData?.shop_id) return;
+    try {
+      setIsLoading(true);
+      const response = await fetchApi(`/api/auth/get-customer-records/${adminData.shop_id}`)
+      if (!response || response.success === false) {
+        throw new Error(response?.message || "Failed to fetch sales for report!");
+      }
 
+      const transactions = (response.data || []).map((i) => {
+        const transStatus = transformStatus(i.status);
+        return {
+          date: moment(i.created_at).format('YYYY-MM-DD'),
+          customer: i.cus_name,
+          service: i.service,
+          qty: parseFloat(i.num_items),
+          total: parseFloat(i.total_amount),
+          status: transStatus
+        }
+      })
+      setransactionRows(transactions);
+    } catch (error) {
+      console.error("Reports - loadTransactions error:", error);
+      toast.error(error?.message || "Unable to load transaction records");
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +101,7 @@ const Reports = () => {
 
   useEffect(() => {
     loadItems();
+    loadTransactions();
   }, [adminData]);
   // Mock data modeled on screenshots
   const salesRows = [
@@ -71,12 +114,12 @@ const Reports = () => {
   //   { id: '003', name: 'Laundry Bag', category: 'Equipment', quantity: 10, price: 2.0, dateAdded: '2025-04-25', lastUpdated: '2025-05-28' },
   // ];
 
-  const transactionRows = [
-    { date: '2025-11-01', customer: 'John Dela Cruz', service: 'Wash & Fold', qty: '3 pcs', total: 300, status: 'Completed' },
-    { date: '2025-11-01', customer: 'Maria Santos', service: 'Iron Only', qty: '5 pcs', total: 200, status: 'Pending' },
-    { date: '2025-11-01', customer: 'John Dela Cruz', service: 'Wash & Fold', qty: '3 pcs', total: 300, status: 'Cancelled' },
-    { date: '2025-10-31', customer: 'Ana Reyes', service: 'Dry Clean', qty: '2 pcs', total: 400, status: 'Cancelled' },
-  ];
+  // const transactionRows = [
+  //   { date: '2025-11-01', customer: 'John Dela Cruz', service: 'Wash & Fold', qty: '3 pcs', total: 300, status: 'Completed' },
+  //   { date: '2025-11-01', customer: 'Maria Santos', service: 'Iron Only', qty: '5 pcs', total: 200, status: 'Pending' },
+  //   { date: '2025-11-01', customer: 'John Dela Cruz', service: 'Wash & Fold', qty: '3 pcs', total: 300, status: 'Cancelled' },
+  //   { date: '2025-10-31', customer: 'Ana Reyes', service: 'Dry Clean', qty: '2 pcs', total: 400, status: 'Cancelled' },
+  // ];
 
   const inRange = (isoDate) => {
     if (!fromDate && !toDate) return true;
@@ -91,7 +134,10 @@ const Reports = () => {
     if (!Array.isArray(itemRows)) return [];
     return itemRows.filter(r => inRange(r.dateAdded));
   }, [itemRows, fromDate, toDate]);
-  const filteredTx = useMemo(() => transactionRows.filter(r => inRange(r.date)), [fromDate, toDate]);
+  const filteredTx = useMemo(() => {
+    if (!Array.isArray(transactionRows)) return [];
+    return transactionRows.filter(r => inRange(r.date));
+  }, [transactionRows, fromDate, toDate]);
 
   const salesTotals = useMemo(() => {
     const amount = filteredSales.reduce((s, r) => s + r.amount, 0);
