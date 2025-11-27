@@ -1,7 +1,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 const Home = () => {
+     const { slug } = useParams();
     return (
         <div className="min-h-screen bg-cover bg-center"
             style={{
@@ -14,9 +15,9 @@ const Home = () => {
                 {/* Hero Section */}
                 <div className="container mx-auto pt-20 px-4">
                     <div className="text-center mb-16">
-                        <h1 className="text-4xl md:text-5xl font-bold text-[#126280] mb-4">
-                            Welcome to Wash Wise Intelligence
-                        </h1>
+                         <h1 className="text-4xl font-bold text-center mb-8">
+                    Welcome to {slug ? slug.replace(/-/g, ' ') : 'Our Shop'}
+                </h1>
                         <p className="text-xl text-gray-700 mb-8">
                             Professional Laundry & Dry Cleaning Services
                         </p>
