@@ -59,10 +59,9 @@ function AppContent() {
         {shouldShowHeader && <Header />}
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/:slug?" element={<Home />} />
+          <Route path="/:slug" element={<Home />} />
           <Route path="/:slug/about" element={<About />} />
-          <Route path="/services" element={<Services />} />
+          <Route path="/:slug/services" element={<Services />} />
           <Route path="/prices" element={<Prices />} />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />

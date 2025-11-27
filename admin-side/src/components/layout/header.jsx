@@ -15,8 +15,8 @@ import { fetchApi } from '@/lib/api.js';
 
 // Default/Static shop when no localStorage is set
 const DEFAULT_SHOP = {
-  shop_name: 'Laundry Shop',
-  slug: 'laundry-shop',
+  shop_name: 'Wash Wise Intelligence',
+  slug: 'wash-wise-intelligence',
   shop_id: 'LMSS-00000'
 };
 
@@ -28,45 +28,58 @@ const Header = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
 
-  
   useEffect(() => {
     const fetchShops = async () => {
       try {
+        setLoadingShops(true);
         const response = await fetchApi('/api/public/shop-name-slug');
 
         if (response.success && response.data) {
-          const shopsWithSlug = response.data.filter(shop => shop.slug && shop.slug.trim() !== '');
+          const shopsWithSlug = response.data.filter(s => s.slug && s.slug.trim() !== '');
           setShops(shopsWithSlug);
 
-          if (!slug) {
-            localStorage.removeItem('selectedShop');
-            localStorage.removeItem('selectedShopId');
-            setSelectedShop(DEFAULT_SHOP);
-            return;
-          }
+          let targetShop = DEFAULT_SHOP;
 
-          if (slug) {
-            const shop = shopsWithSlug.find(s => s.slug === slug);
-            setSelectedShop(shop || DEFAULT_SHOP);
-
-            if (shop) {
-              localStorage.setItem('selectedShop', shop.slug);
-              localStorage.setItem('selectedShopId', shop.shop_id);
+          // Priority 1: If URL has a slug, use it (most important for refresh)
+          if (slug && slug.trim() !== '') {
+            const shopFromUrl = shopsWithSlug.find(s => s.slug === slug);
+            
+            if (shopFromUrl) {
+              targetShop = shopFromUrl;
+              localStorage.setItem('selectedShop', shopFromUrl.slug);
+              localStorage.setItem('selectedShopId', shopFromUrl.shop_id);
+            } else {
+              // Slug doesn't exist in API - keep default
+              targetShop = DEFAULT_SHOP;
+              localStorage.removeItem('selectedShop');
+              localStorage.removeItem('selectedShopId');
             }
-          } else {
+          } 
+          // Priority 2: If no slug in URL, check localStorage
+          else {
             const savedSlug = localStorage.getItem('selectedShop');
             const savedId = localStorage.getItem('selectedShopId');
 
             if (savedSlug && savedId) {
-              const shop = shopsWithSlug.find(s => s.slug === savedSlug);
-              setSelectedShop(shop || DEFAULT_SHOP);
+              const savedShop = shopsWithSlug.find(s => s.slug === savedSlug);
+              if (savedShop) {
+                targetShop = savedShop;
+              } else {
+                // Saved shop no longer exists - use default
+                targetShop = DEFAULT_SHOP;
+                localStorage.removeItem('selectedShop');
+                localStorage.removeItem('selectedShopId');
+              }
             } else {
-              setSelectedShop(DEFAULT_SHOP);
+              // No localStorage and no slug - use default
+              targetShop = DEFAULT_SHOP;
             }
           }
+
+          setSelectedShop(targetShop);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching shops:', err);
         setShops([]);
         setSelectedShop(DEFAULT_SHOP);
       } finally {
