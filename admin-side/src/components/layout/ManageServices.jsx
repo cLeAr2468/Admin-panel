@@ -184,39 +184,6 @@ const ManageServices = () => {
               ...s,
               title: formData.title,
               description: formData.description,
-              image_url: response.data.image_url || s.image_url,
-              isDisplayed: formData.isDisplayed
-            }
-            : s
-        ));
-
-        toast.success("Service updated successfully!");
-
-        // reset
-        setFormData({
-          title: "",
-          description: "",
-          image: null,
-          isDisplayed: false,
-        });
-        setImagePreview(null);
-        setIsDialogOpen(false);
-        setIsEditMode(false);
-        setSelectedService(null);
-
-        return;
-      } else {
-        setIsLoading(true);
-        const response = await fetchApiFormData('/api/auth/add-service', formDataToSend);
-      }
-
-      if (isEditMode && selectedService) {
-        setServices(services.map(s =>
-          s.id === selectedService.id
-            ? {
-              ...s,
-              title: formData.title,
-              description: formData.description,
               image_url: imagePreview || s.image_url,
               isDisplayed: formData.isDisplayed
             }
@@ -224,6 +191,9 @@ const ManageServices = () => {
         ));
         toast.success("Service updated successfully");
       } else {
+        setIsLoading(true);
+        const response = await fetchApiFormData('/api/auth/add-service', formDataToSend);
+
         setServices((prev) => [
           ...prev,
           {
@@ -237,7 +207,6 @@ const ManageServices = () => {
 
         toast.success("Service added successfully!");
       }
-
 
       setFormData({
         title: "",
@@ -284,21 +253,39 @@ const ManageServices = () => {
     }
   };
 
-  const handleSaveDisplaySettings = () => {
+  const handleSaveDisplaySettings = async () => {
     if (tempSelectedServices.length !== 3) {
       toast.error("Please select exactly 3 services to display");
       return;
     }
 
-    const updatedServices = services.map(s => ({
-      ...s,
-      isDisplayed: tempSelectedServices.includes(s.id)
-    }));
+    try {
+      setIsLoading(true);
 
-    setServices(updatedServices);
-    setIsSelectionMode(false);
-    setTempSelectedServices([]);
-    toast.success("Display settings saved successfully!");
+      const response = await fetchApi(`/api/auth/update-services-display-settings/${adminData.shop_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ displayedServicesIds: tempSelectedServices }),
+      });
+
+      if (!response || response === false) {
+        throw new Error(response?.message || "Failed to update display setting!");
+      }
+
+      const updatedServices = services.map(s => ({
+        ...s,
+        isDisplayed: tempSelectedServices.includes(s.id)
+      }));
+
+      setServices(updatedServices);
+      setIsSelectionMode(false);
+      setTempSelectedServices([]);
+      toast.success("Display settings saved successfully!");
+    } catch (error) {
+      console.error("handleSaveDisplaySettings error:", error);
+      toast.error(error.message || "Failed to save display settings");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartSelection = () => {

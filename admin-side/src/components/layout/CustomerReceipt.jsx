@@ -28,7 +28,7 @@ const CustomerReceipt = ({ onClose }) => {
     pillowCase: '',
     bedSheets: '',
     kl: '',
-    washing: true,
+    services: true,
     totalAmount: "0.00",
     itemCount: "0",
   });
@@ -39,6 +39,60 @@ const CustomerReceipt = ({ onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const { adminData } = useContext(AuthContext);
+  const [itemTypes, setItemTypes] = useState([]);
+  const [itemType, setItemType] = useState(null);
+  const [serviceItems, setServiceItems] = useState([]);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [showPrintButton, setShowPrintButton] = useState(false);
+
+  useEffect(() => {
+    const fetchServiceItems = async () => {
+      if (!adminData?.shop_id) return;
+      try {
+        const res = await fetchApi(`/api/auth/displayed-services/${adminData.shop_id}`);
+        if (!res || res.success === false) {
+          console.error(res?.message || "Failed to fetch items for services");
+          throw new Error(res?.message || "Failed to fetch items for services");
+        }
+
+        const items = (res.data || []).map((i) => ({
+          id: i.service_id,
+          name: i.service_name.replace(/['"]+/g, ''),
+        }));
+
+        setServiceItems(items);
+      } catch (error) {
+        console.error("Error fetching service items:", error);
+      }
+    };
+    fetchServiceItems();
+
+    const fetchPriceItemTypes = async () => {
+      if (!adminData?.shop_id) return;
+      try {
+        const res = await fetchApi(`/api/auth/displayed-prices/${adminData.shop_id}`);
+        if (!res || res.success === false) {
+          throw new Error(res?.message || "Failed to fetch items for pricing!");
+        }
+
+        const items = (res.data || []).map((i) => ({
+          pricing_id: i.pricing_id,
+          categories: i.categories,
+          description: i.description,
+          price: i.price,
+          pricing_label: i.pricing_label,
+        }));
+
+        setItemTypes(items);
+
+      } catch (error) {
+        console.error("Failed to fetch item types", error);
+      }
+    };
+
+    fetchPriceItemTypes();
+  }, [adminData]);
+
 
   const fetchCustomerData = async (user_id) => {
     try {
@@ -68,48 +122,62 @@ const CustomerReceipt = ({ onClose }) => {
   };
 
 
-  const handleInputChange = async (e) => {
+  const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    // Update the form immediately for better UX
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
 
-    // Handle the cus_id field specially
+    if (type === 'checkbox' && name !== 'other_static_checkbox') {
+    
+    setSelectedServices(prevServices => {
+        let newServices;
+        
+        if (checked) {
+            newServices = [...prevServices, name];
+        } else {
+            newServices = prevServices.filter(serviceName => serviceName !== name);
+        }
+        return newServices;
+    });
+}
+    let updates = {};
+
+    if (type === 'checkbox') {
+      updates[name] = checked;
+    } else if (type === "number") {
+      const numValue = parseFloat(value);
+      if (numValue < 0) {
+        return;
+      }
+      updates[name] = value;
+    } else {
+      updates[name] = value;
+    }
+
+    if (name === 'batch') {
+      const batchValue = parseFloat(value);
+      if (!isNaN(batchValue) && batchValue >= 0) {
+        const klValue = (batchValue * 7).toString();
+        updates.kl = klValue;
+      } else if (value.trim() === '') {
+        updates.kl = '';
+      }
+    }
+
     if (name === 'cus_id' && value.trim() === '') {
-      setFormData(prev => ({
-        ...prev,
+      updates = {
+        ...updates,
         name: '',
         cus_phoneNum: '',
         cus_address: ''
-      }));
-      return;
+      };
     }
-
-    // Original handling for other fields
-    if (type === 'checkbox') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: checked,
-      }));
-    } else if (type === "number") {
-      // Prevent negative numbers
-      const numValue = parseFloat(value);
-      if (numValue < 0) {
-        return; // Don't update if negative
-      }
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      ...updates
+    }));
   };
 
   const handleEnterKey = async (e) => {
@@ -150,15 +218,20 @@ const CustomerReceipt = ({ onClose }) => {
       "bedSheets",
     ];
 
+    const selectedItem = itemType;
+    const batchQuantity = parseFloat(formData.batch) || 0;
+
     let total = 0;
     let count = 0;
 
     items.forEach((item) => {
       const quantity = parseInt(formData[item]) || 0;
-      const price = getItemPrice(item);
-      total += quantity * price;
       count += quantity;
     });
+    if (selectedItem && selectedItem.price) {
+      const price = parseFloat(selectedItem.price);
+      total = batchQuantity * price;
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -185,7 +258,8 @@ const CustomerReceipt = ({ onClose }) => {
     setTimeout(() => {
       window.print();
       setShowPrintPreview(false);
-    }, 100);
+      onClose();
+    }, 1000);
   };
 
   const submitLaundryRecord = async () => {
@@ -202,7 +276,7 @@ const CustomerReceipt = ({ onClose }) => {
         towels: parseInt(formData.towel) || 0,
         pillow_case: parseInt(formData.pillowCase) || 0,
         bed_sheets: parseInt(formData.bedSheets) || 0,
-        washing: formData.washing,
+        service: selectedServices.join(', '),
         kg: formData.kl,
         num_items: parseInt(formData.itemCount) || 0,
         total_amount: parseFloat(formData.totalAmount) || 0
@@ -222,8 +296,9 @@ const CustomerReceipt = ({ onClose }) => {
 
       if (response.success) {
         toast.success('Laundry record saved successfully!');
-        // Clear form or close modal after successful submission
-        onClose();
+        setTimeout(() => {
+          setShowPrintButton(true);
+        }, 1500);
         setLaundryId(response.laundryId);
       } else {
         toast.error(response.message || 'Failed to save laundry record');
@@ -469,16 +544,32 @@ const CustomerReceipt = ({ onClose }) => {
                   {formData.bedSheets}
                 </div>
               </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.washing}
-                  readOnly
-                  className="mr-2"
-                />
-                <label className="text-sm font-semibold text-gray-700">
-                  WASHING
-                </label>
+              <div className="w-full">
+                <h3 className="font-semibold text-lg text-slate-800 mb-3">Available Services</h3>
+
+                {serviceItems.length === 0 ? (
+                  <p className="text-gray-500">No services found for this shop.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {serviceItems.map((service) => (
+                      <div key={service.id} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name={service.name}
+                          checked={formData[service.name] ?? false}
+                          onChange={handleInputChange}
+                          className="mr-2 h-4 w-4 text-slate-600 rounded"
+                        />
+                        <label
+                          htmlFor={service.name}
+                          className="text-sm font-semibold text-slate-800 cursor-pointer"
+                        >
+                          {service.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -632,6 +723,7 @@ const CustomerReceipt = ({ onClose }) => {
             <div className="space-y-4">
               <div>
                 <Input
+                  disabled
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
@@ -654,6 +746,7 @@ const CustomerReceipt = ({ onClose }) => {
             <div className="space-y-4">
               <div>
                 <Input
+                  disabled
                   name="cus_phoneNum"
                   type="number"
                   min="0"
@@ -665,6 +758,7 @@ const CustomerReceipt = ({ onClose }) => {
               </div>
               <div>
                 <Input
+                  disabled
                   name="cus_address"
                   value={formData.cus_address}
                   onChange={handleInputChange}
@@ -673,6 +767,32 @@ const CustomerReceipt = ({ onClose }) => {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Dynamic Item Types */}
+          <div className="w-full mb-4">
+            <h2 className="font-semibold text-lg text-slate-800 mb-4">Select Item Type</h2>
+
+            {itemTypes.length === 0 ? (
+              <p className="text-gray-500 text-sm">Loading item types...</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {itemTypes.map((type) => (
+                  <div
+                    key={type.pricing_id}
+                    onClick={() => setItemType(type)}
+                    className={`cursor-pointer border rounded-xl p-4 text-center transition ${itemType?.pricing_id === type.pricing_id
+                      ? "border-blue-600 bg-blue-50"
+                      : "border-gray-400 shadow-md hover:bg-gray-100"
+                      }`}
+                  >
+                    <p className="font-medium text-slate-800 mb-2">{type.categories}</p>
+                    <p className="text-xs font-semibold">₱{type.price} {type.pricing_label}</p>
+                    <p className="text-sm text-gray-600">{type.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Item Details */}
@@ -781,17 +901,32 @@ const CustomerReceipt = ({ onClose }) => {
 
           {/* Service and Totals */}
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="washing"
-                checked={formData.washing}
-                onChange={handleInputChange}
-                className="mr-2 h-4 w-4 text-slate-600"
-              />
-              <label className="text-sm font-semibold text-slate-800">
-                WASHING
-              </label>
+            <div className="w-full">
+              <h3 className="font-semibold text-lg text-slate-800 mb-3">Available Services</h3>
+
+              {serviceItems.length === 0 ? (
+                <p className="text-gray-500">No services found for this shop.</p>
+              ) : (
+                <div className="space-y-3">
+                  {serviceItems.map((service) => (
+                    <div key={service.id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name={service.name}
+                        checked={formData[service.name] ?? false}
+                        onChange={handleInputChange}
+                        className="mr-2 h-4 w-4 text-slate-600 rounded"
+                      />
+                      <label
+                        htmlFor={service.name}
+                        className="text-sm font-semibold text-slate-800 cursor-pointer"
+                      >
+                        {service.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="text-right">
               <div className="text-lg font-semibold text-slate-800">
@@ -821,14 +956,14 @@ const CustomerReceipt = ({ onClose }) => {
           </div>
 
           {/* Print Link */}
-          <div className="text-center">
+          {showPrintButton ? (<div className="text-center">
             <button
               onClick={handlePrint}
               className="text-slate-800 font-semibold hover:text-slate-600 underline cursor-pointer"
             >
               PRINT
             </button>
-          </div>
+          </div>) : (null)}
         </CardContent>
       </Card>
     </div>

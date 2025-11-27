@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Plus, Pencil, Trash2, X, Save, Eye, CheckCircle, Upload } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { toast } from "sonner";
+import { AuthContext } from "@/context/AuthContext";
+import { fetchApi, fetchApiFormData } from "@/lib/api";
 
 const ManagePrice = () => {
   const navigate = useNavigate();
@@ -46,7 +48,7 @@ const ManagePrice = () => {
   const [showPriceDialog, setShowPriceDialog] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [tempSelectedPrices, setTempSelectedPrices] = useState([]);
-  
+  const { adminData } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     category: "",
     description: "",
@@ -55,6 +57,39 @@ const ManagePrice = () => {
     image: null,
     isDisplayed: true,
   });
+
+  const loadPricesItems = async () => {
+    if (!adminData?.shop_id) return;
+    setIsLoading(true);
+    try {
+      const response = await fetchApi(`/api/auth/get-all-prices/${adminData.shop_id}`);
+      if (!response || response.success === false) {
+        throw new Error(res.message || "Failed to fetch prices items!");
+      }
+
+      const items = (response.data || []).map((i) => ({
+        id: i.pricing_id,
+        category: i.categories,
+        description: i.description,
+        price: i.price,
+        unit: i.pricing_label,
+        image_url: i.image_url,
+        isDisplayed: i.is_displayed === "true",
+      }));
+
+      setPrices(items);
+    } catch (error) {
+      console.log("ManagePrices - loadPricesItems error:", error);
+      toast.error(error.message || "Unable to load prices items!");
+      setPrices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadPricesItems();
+  }, [adminData]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -68,14 +103,14 @@ const ManagePrice = () => {
         toast.error('Please select an image file');
         return;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
 
       setFormData((prev) => ({ ...prev, image: file }));
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -84,47 +119,128 @@ const ManagePrice = () => {
     }
   };
 
-  const handleSubmit = (event) => {
+  const canSetDisplayed = (desired = true, editingPricingId = null) => {
+    if (!desired) return true;
+
+    const displayedCount = prices.filter(p => p.isDisplayed === true || p.isDisplayed === "true").length;
+    if (editingPricingId) {
+
+      const currentlyDisplayed = prices.some(
+        p => p.id === editingPricingId && (p.isDisplayed === true || p.isDisplayed === "true")
+      );
+      if (currentlyDisplayed) return true;
+
+    }
+    return displayedCount < 3;
+  };
+
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    
+
     if (!formData.category || !formData.price) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    if (isEditMode) {
-      setPrices(prices.map(p => 
-        p.id === selectedPrice.id 
-          ? { ...p, category: formData.category, description: formData.description, price: formData.price, unit: formData.unit, image_url: imagePreview || p.image_url, isDisplayed: formData.isDisplayed }
-          : p
-      ));
-      toast.success("Price updated successfully");
-    } else {
-      const newPrice = {
-        id: prices.length > 0 ? Math.max(...prices.map(p => p.id)) + 1 : 1,
-        category: formData.category,
-        description: formData.description,
-        price: formData.price,
-        unit: formData.unit,
-        image_url: imagePreview,
-        isDisplayed: formData.isDisplayed,
-      };
-      setPrices([...prices, newPrice]);
-      toast.success("Price added successfully");
+    try {
+      if (!adminData?.shop_id) {
+        throw new Error("Shop information not available. Please reload or login.");
+      }
+
+      const wantDisplay = !!formData.isDisplayed;
+      const editingId = isEditMode && selectedPrice ? selectedPrice.id : null;
+      if (!canSetDisplayed(wantDisplay, editingId)) {
+        setFormData(prev => ({ ...prev, isDisplayed: false }));
+        toast.error("Only 3 services can be displayed. Unselect another one first. This feature will be saved as Hidden.");
+      }
+
+      if (isEditMode && selectedPrice) {
+        const formDataToSend = new FormData();
+        formDataToSend.append("categories", formData.category);
+        formDataToSend.append("description", formData.description)
+        formDataToSend.append("price", formData.price);
+        formDataToSend.append("pricing_label", formData.unit);
+        formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
+
+        if (!formData.image && selectedPrice.image_url) {
+          formDataToSend.append("old_image_url", selectedPrice.image_url);
+        }
+
+        if (formData.image) {
+          formDataToSend.append("image", formData.image);
+        }
+
+        const response = await fetchApiFormData(`/api/auth/update-price/${selectedPrice.id}`,
+          formDataToSend,
+          { method: "PUT" }
+        );
+
+        if (!response || response.success === false) {
+          throw new Error(response?.message || "Update failed.")
+        }
+
+        setPrices(prices.map(p =>
+          p.id === selectedPrice.id
+            ? {
+              ...p,
+              category: formData.category,
+              description: formData.description,
+              price: formData.price,
+              unit: formData.unit,
+              image_url: imagePreview || p.image_url,
+              isDisplayed: formData.isDisplayed
+            }
+            : p
+        ));
+        toast.success("Price updated successfully");
+      } else {
+        setIsLoading(true);
+        const formDataToSend = new FormData();
+        formDataToSend.append("shop_id", adminData.shop_id);
+        formDataToSend.append("categories", formData.category);
+        formDataToSend.append("description", formData.description)
+        formDataToSend.append("price", formData.price);
+        formDataToSend.append("pricing_label", formData.unit);
+        formDataToSend.append("is_displayed", formData.isDisplayed ? "true" : "false");
+
+        if (formData.image) {
+          formDataToSend.append("image", formData.image);
+        }
+
+        const response = await fetchApiFormData('/api/auth/add-price', formDataToSend);
+
+        const newPrice = {
+          id: prices.length > 0 ? Math.max(...prices.map(p => p.id)) + 1 : 1,
+          category: response.data.category,
+          description: response.data.description,
+          price: response.data.price,
+          unit: response.data.pricing_label,
+          image_url: response.data.image_url,
+          isDisplayed: response.data.is_displayed === "true",
+        };
+        setPrices([...prices, newPrice]);
+        toast.success("Price added successfully");
+      }
+
+      setFormData({
+        category: "",
+        description: "",
+        price: "",
+        unit: "per load",
+        image: null,
+        isDisplayed: true,
+      });
+      setImagePreview(null);
+      setIsDialogOpen(false);
+      setIsEditMode(false);
+      setSelectedPrice(null);
+    } catch (error) {
+      console.error("Add pricing error:", error);
+      toast.error(error.message || "Server error. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    
-    setFormData({
-      category: "",
-      description: "",
-      price: "",
-      unit: "per load",
-      image: null,
-      isDisplayed: true,
-    });
-    setImagePreview(null);
-    setIsDialogOpen(false);
-    setIsEditMode(false);
-    setSelectedPrice(null);
   };
 
   const handleEdit = (price) => {
@@ -135,7 +251,7 @@ const ManagePrice = () => {
       price: price.price,
       unit: price.unit || "per load",
       image: null,
-      isDisplayed: price.isDisplayed !== undefined ? price.isDisplayed : true,
+      isDisplayed: price.isDisplayed === true || price.isDisplayed === "true",
     });
     setImagePreview(price.image_url || null);
     setIsEditMode(true);
@@ -156,21 +272,38 @@ const ManagePrice = () => {
     }
   };
 
-  const handleSaveDisplaySettings = () => {
+  const handleSaveDisplaySettings = async () => {
     if (tempSelectedPrices.length !== 3) {
       toast.error("Please select exactly 3 prices to display");
       return;
     }
 
-    const updatedPrices = prices.map(p => ({
-      ...p,
-      isDisplayed: tempSelectedPrices.includes(p.id)
-    }));
-    
-    setPrices(updatedPrices);
-    setIsSelectionMode(false);
-    setTempSelectedPrices([]);
-    toast.success("Display settings saved successfully!");
+    try {
+      setIsLoading(true);
+      const response = await fetchApi(`/api/auth/update-prices-display-settings/${adminData.shop_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ displayedPricesIds: tempSelectedPrices }),
+      });
+
+      if (!response || response === false) {
+        throw new Error(response?.message || "Failed to update display settings.");
+      }
+
+      const updatedPrices = prices.map(p => ({
+        ...p,
+        isDisplayed: tempSelectedPrices.includes(p.id)
+      }));
+
+      setPrices(updatedPrices);
+      setIsSelectionMode(false);
+      setTempSelectedPrices([]);
+      toast.success("Display settings saved successfully!");
+    } catch (error) {
+      console.log("handleSaveDisplaySettings error:", error)
+      toast.error(error.message || "Failed to save display settings");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartSelection = () => {
@@ -191,7 +324,7 @@ const ManagePrice = () => {
       price: "",
       unit: "per load",
       image: null,
-      isDisplayed: true,
+      isDisplayed: false,
     });
     setImagePreview(null);
     setIsEditMode(false);
@@ -202,7 +335,7 @@ const ManagePrice = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
-      
+
       <div className="flex-1 overflow-auto">
         <div className="p-6">
           {/* Header */}
@@ -281,94 +414,92 @@ const ManagePrice = () => {
                 prices.map((price) => {
                   const isSelected = tempSelectedPrices.includes(price.id);
                   return (
-                  <Card 
-                    key={price.id} 
-                    className={`border shadow-sm transition-all bg-white relative ${
-                      isSelectionMode 
-                        ? isSelected 
-                          ? 'border-green-500 border-2 shadow-lg cursor-pointer' 
+                    <Card
+                      key={price.id}
+                      className={`border shadow-sm transition-all bg-white relative ${isSelectionMode
+                        ? isSelected
+                          ? 'border-green-500 border-2 shadow-lg cursor-pointer'
                           : 'border-gray-200 hover:border-[#0B6B87] cursor-pointer'
                         : 'border-gray-200 hover:shadow-md'
-                    }`}
-                    onClick={() => isSelectionMode && handleToggleSelection(price.id)}
-                  >
-                    <CardContent className="p-0">
-                      {/* Image Section */}
-                      <div className="relative h-48 bg-gray-200">
-                        {price.image_url ? (
-                          <img
-                            src={price.image_url}
-                            alt={price.category}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <Upload className="h-12 w-12" />
-                          </div>
-                        )}
-                        
-                        {/* Display Status Badge or Selection Checkbox */}
-                        <div className="absolute top-3 right-3">
-                          {isSelectionMode ? (
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              isSelected 
-                                ? 'bg-green-500 border-green-500' 
-                                : 'bg-white border-gray-300'
-                            }`}>
-                              {isSelected && (
-                                <CheckCircle className="h-4 w-4 text-white" />
-                              )}
-                            </div>
+                        }`}
+                      onClick={() => isSelectionMode && handleToggleSelection(price.id)}
+                    >
+                      <CardContent className="p-0">
+                        {/* Image Section */}
+                        <div className="relative h-48 bg-gray-200">
+                          {price.image_url ? (
+                            <img
+                              src={price.image_url}
+                              alt={price.category}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
-                            <>
-                              {price.isDisplayed !== false ? (
-                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                                  Displayed
-                                </span>
-                              ) : (
-                                <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                                  Hidden
-                                </span>
-                              )}
-                            </>
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <Upload className="h-12 w-12" />
+                            </div>
+                          )}
+
+                          {/* Display Status Badge or Selection Checkbox */}
+                          <div className="absolute top-3 right-3">
+                            {isSelectionMode ? (
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected
+                                ? 'bg-green-500 border-green-500'
+                                : 'bg-white border-gray-300'
+                                }`}>
+                                {isSelected && (
+                                  <CheckCircle className="h-4 w-4 text-white" />
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                {price.isDisplayed !== false ? (
+                                  <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                                    Displayed
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                                    Hidden
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-[#0B6B87] mb-2">
+                            {price.category}
+                          </h3>
+                          {price.description && (
+                            <p className="text-sm text-gray-600 mb-3">{price.description}</p>
+                          )}
+                          <div className="flex items-baseline gap-2 mb-4">
+                            <span className="text-3xl font-bold text-[#0B6B87]">
+                              ₱{price.price}
+                            </span>
+                            <span className="text-sm text-gray-500">{price.unit}</span>
+                          </div>
+
+                          {!isSelectionMode && (
+                            <div className="flex gap-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(price);
+                                }}
+                                className="flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </Button>
+                            </div>
                           )}
                         </div>
-                      </div>
-                      
-                      {/* Content Section */}
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-[#0B6B87] mb-2">
-                          {price.category}
-                        </h3>
-                        {price.description && (
-                          <p className="text-sm text-gray-600 mb-3">{price.description}</p>
-                        )}
-                        <div className="flex items-baseline gap-2 mb-4">
-                          <span className="text-3xl font-bold text-[#0B6B87]">
-                            ₱{price.price}
-                          </span>
-                          <span className="text-sm text-gray-500">{price.unit}</span>
-                        </div>
-                        
-                        {!isSelectionMode && (
-                          <div className="flex gap-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(price);
-                              }}
-                              className="flex-1 text-[#0B6B87] border-[#0B6B87] hover:bg-[#0B6B87] hover:text-white"
-                            >
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
                   );
                 })
               )}
@@ -508,7 +639,20 @@ const ManagePrice = () => {
                   type="checkbox"
                   id="isDisplayed"
                   checked={formData.isDisplayed}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isDisplayed: e.target.checked }))}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    const displayedCount = prices.filter(
+                      i =>
+                        (i.isDisplayed === true || i.isDisplayed === "true") &&
+                        (!isEditMode || i.id !== selectedPrice?.id)
+                    ).length;
+
+                    if (!canSetDisplayed(newValue, selectedPrice?.id)) {
+                      toast.error("You already have 3 displayed services. Uncheck another one first.");
+                      return;
+                    }
+                    setFormData(prev => ({ ...prev, isDisplayed: newValue }));
+                  }}
                   className="w-4 h-4 text-[#126280] border-gray-300 rounded focus:ring-[#126280]"
                 />
                 <label htmlFor="isDisplayed" className="text-sm font-medium text-gray-700 cursor-pointer">

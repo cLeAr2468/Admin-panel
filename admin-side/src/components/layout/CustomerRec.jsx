@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Table,
   TableBody,
@@ -17,47 +17,93 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Filter } from "lucide-react";
+import { AuthContext } from "@/context/AuthContext";
+import { fetchApi } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function CustomerRec() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredData, setFilteredData] = useState([]);
   const [statusFilter, setStatusFilter] = useState("All");
+  const { adminData } = useContext(AuthContext);
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState([]);
 
-  const initialData = [
-    {
-      name: "Gabiana, Anj",
-      address: "Erenas St.",
-      visit: 2,
-      items: 50,
-      status: "Laundry Done",
-      date: "04-04-25",
-      time: "8:00 AM",
-    },
-    {
-      name: "Santos, Maria",
-      address: "Makati City",
-      visit: 5,
-      items: 30,
-      status: "On Service",
-      date: "04-04-25",
-      time: "9:15 AM",
-    },
-    {
-      name: "Cruz, Juan",
-      address: "Quezon City",
-      visit: 1,
-      items: 45,
-      status: "Ready to pick up",
-      date: "04-04-25",
-      time: "10:30 AM",
-    },
-  ];
+  const parseDateTime = (isoString) => {
+    if (!isoString) {
+      return {
+        rawDate: 'N/A',
+        rawTime: 'N/A',
+        localDateTime: 'N/A',
+        localTime: 'N/A'
+      };
+    }
 
-  const [data, setData] = useState(initialData);
+    const parts = isoString.split('T');
+    const datePart = parts[0];
+    const timePart = parts[1] ? parts[1].split('.')[0] : '00:00:00';
+    const dateObject = new Date(isoString);
+
+    const localTimeFormatted = dateObject.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    const localDateTimeFormatted = dateObject.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    return {
+      rawDate: datePart,
+      rawTime: timePart,
+      localTime: localTimeFormatted,
+      localDateTime: localDateTimeFormatted
+    };
+  };
+
+  const loadCustomerRec = async () => {
+    if (!adminData?.shop_id) return;
+    try {
+      setIsLoading(true);
+      const response = await fetchApi(`/api/auth/get-customer-records/${adminData.shop_id}`);
+      if (!response || response === false) {
+        throw new Error(response?.message || "Failed to fetch customer records");
+      }
+
+      const cusRecord = (response.data || []).map((i) => {
+        const parsedDates = parseDateTime(i.created_at);
+        return {
+          name: i.cus_name,
+          address: i.cus_address,
+          visit: i.batch,
+          items: i.num_items,
+          status: i.status,
+          date: parsedDates.rawDate,
+          time: parsedDates.localTime,
+        }
+      });
+      setData(cusRecord);
+    } catch (error) {
+      setData([]);
+      console.error("CustomerRec - loadCustomerRec error:", error);
+      toast.error(error?.message || "Unable to load customer records");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let filtered = initialData;
-    
+    loadCustomerRec();
+  }, [adminData]);
+
+
+  useEffect(() => {
+    let filtered = data;
     // Apply status filter first
     if (statusFilter !== "All") {
       filtered = filtered.filter(item => item.status === statusFilter);
@@ -73,7 +119,7 @@ export default function CustomerRec() {
     }
 
     setFilteredData(filtered);
-  }, [searchTerm, statusFilter]);
+  }, [data, searchTerm, statusFilter]);
 
   const handleStatusChange = (index, newStatus) => {
     const newData = [...data];
@@ -116,47 +162,52 @@ export default function CustomerRec() {
       </div>
 
       {/* Table */}
-        <Table className="border">
-          <TableHeader>
-            <TableRow className="bg-sky-200">
-              <TableHead className="border font-semibold text-sky-900">NAME</TableHead>
-              <TableHead className="border font-semibold text-sky-900">ADDRESS</TableHead>
-              <TableHead className="border font-semibold text-sky-900 text-center">VISITS</TableHead>
-              <TableHead className="border font-semibold text-sky-900 text-center">ITEMS</TableHead>
-              <TableHead className="border font-semibold text-sky-900">
-                <div className="flex items-center justify-between">
-                  <span>STATUS</span>
-                  <Select 
-                    value={statusFilter} 
-                    onValueChange={setStatusFilter}
-                  >
-                    <SelectTrigger className="h-8 w-8 p-0 bg-transparent items-center justify-center">
-                    </SelectTrigger>
-                    <SelectContent side="bottom" align="end">
-                      <SelectItem value="All" className="font-medium">
-                        All Status
-                      </SelectItem>
-                      <SelectItem value="On Service" className="text-sky-700">
-                        On Service
-                      </SelectItem>
-                      <SelectItem value="Ready to pick up" className="text-yellow-700">
-                        Ready to pick up
-                      </SelectItem>
-                      <SelectItem value="Laundry Done" className="text-green-700">
-                        Laundry Done
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </TableHead>
-              <TableHead className="border font-semibold text-sky-900">DATE/TIME</TableHead>
-              <TableHead className="border font-semibold text-sky-900 text-center">SEND SMS</TableHead>
-              <TableHead className="border font-semibold text-sky-900 text-center">ACTIONS</TableHead>
+      <Table className="border">
+        <TableHeader>
+          <TableRow className="bg-sky-200">
+            <TableHead className="border font-semibold text-sky-900">NAME</TableHead>
+            <TableHead className="border font-semibold text-sky-900">ADDRESS</TableHead>
+            <TableHead className="border font-semibold text-sky-900 text-center">VISITS</TableHead>
+            <TableHead className="border font-semibold text-sky-900 text-center">ITEMS</TableHead>
+            <TableHead className="border font-semibold text-sky-900">
+              <div className="flex items-center justify-between">
+                <span>STATUS</span>
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="h-8 w-8 p-0 bg-transparent items-center justify-center">
+                  </SelectTrigger>
+                  <SelectContent side="bottom" align="end">
+                    <SelectItem value="All" className="font-medium">
+                      All Status
+                    </SelectItem>
+                    <SelectItem value="On Service" className="text-sky-700">
+                      On Service
+                    </SelectItem>
+                    <SelectItem value="Ready to pick up" className="text-yellow-700">
+                      Ready to pick up
+                    </SelectItem>
+                    <SelectItem value="Laundry Done" className="text-green-700">
+                      Laundry Done
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TableHead>
+            <TableHead className="border font-semibold text-sky-900">DATE/TIME</TableHead>
+            <TableHead className="border font-semibold text-sky-900 text-center">SEND SMS</TableHead>
+            <TableHead className="border font-semibold text-sky-900 text-center">ACTIONS</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={8} className="text-center">Loading...</TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredData.map((row, index) => (
-              <TableRow 
+          ) : (
+            filteredData.map((row, index) => (
+              <TableRow
                 key={index}
                 className="bg-white"
               >
@@ -165,11 +216,10 @@ export default function CustomerRec() {
                 <TableCell className="border text-center">{row.visit}</TableCell>
                 <TableCell className="border text-center">{row.items}</TableCell>
                 <TableCell className="border">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    row.status === 'Laundry Done' ? 'bg-green-100 text-green-700' :
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${row.status === 'Laundry Done' ? 'bg-green-100 text-green-700' :
                     row.status === 'Ready to pick up' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-sky-100 text-sky-700'
-                  }`}>
+                      'bg-sky-100 text-sky-700'
+                    }`}>
                     {row.status}
                   </span>
                 </TableCell>
@@ -180,8 +230,8 @@ export default function CustomerRec() {
                   </div>
                 </TableCell>
                 <TableCell className="border text-center">
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     className="bg-sky-300 hover:bg-sky-400 text-sky-900 font-medium"
                     onClick={() => handleSendSMS(row)}
                   >
@@ -189,8 +239,8 @@ export default function CustomerRec() {
                   </Button>
                 </TableCell>
                 <TableCell className="border text-center">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="bg-orange-300 hover:bg-orange-400 text-orange-900 font-medium"
                     onClick={() => handleUpdate(row)}
                   >
@@ -198,9 +248,10 @@ export default function CustomerRec() {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

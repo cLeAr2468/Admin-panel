@@ -1,31 +1,60 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import { fetchApi } from "@/lib/api";
 
 const ResetPassword = () => {
-    const [newPassword, setNewPassword] = useState("");
+    const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const token = searchParams.get('token');
+    const email = searchParams.get('email');
 
-    const handleResetSubmit = (e) => {
+    useEffect(() => {
+        if (!token || !email) {
+            toast.error("Invalid!");
+        }
+    }, [token, email]);
+
+    const handleResetSubmit = async (e) => {
         e.preventDefault();
         setError("");
 
-        if (newPassword.length < 6) {
-            setError("Password must be at least 6 characters long");
+        if (password.length < 8) {
+            setError("Password must be at least 8 characters long");
+            toast.error("Password must be at least 8 characters long");
             return;
         }
 
-        if (newPassword !== confirmPassword) {
+        if (password !== confirmPassword) {
             setError("Passwords do not match");
+            toast.error("Passwords do not match");
             return;
         }
 
-        // Add password reset logic here
-        navigate("/login");
+        try {
+            const res = fetchApi('/api/public/reset-password', {
+                method: 'POST',
+                body: JSON.stringify({ token, email, newPassword: password }),
+            });
+
+            if (res.success === false) {
+                setError(res?.message);
+                throw new Error(res?.message || "Reset password failed!");
+            }
+            toast.success("Password reset successfully! Login using your new password now.")
+            setTimeout(() => {
+                navigate('/login');
+            }, 3000);
+        } catch (error) {
+            console.error("handleResetSubmit error", error);
+            throw error;
+        }
     };
 
     return (
@@ -52,7 +81,7 @@ const ResetPassword = () => {
                         <Card className="w-full shadow-lg bg-[#E4F4FC]/80">
                             <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6">
                                 <h2 className="text-xl md:text-2xl font-bold text-center">Reset Password</h2>
-                                
+
                                 {error && (
                                     <p className="text-red-500 text-sm text-center font-semibold">
                                         {error}
@@ -62,12 +91,12 @@ const ResetPassword = () => {
                                 <form onSubmit={handleResetSubmit}>
                                     <div className="space-y-2">
                                         <Input
-                                            id="newPassword"
+                                            id="password"
                                             type="password"
                                             placeholder="New Password"
                                             className="bg-gray-300 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base h-10 md:h-12"
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
                                             required
                                         />
                                     </div>
@@ -83,7 +112,7 @@ const ResetPassword = () => {
                                         />
                                     </div>
 
-                                    <Button 
+                                    <Button
                                         type="submit"
                                         className="w-full mt-6 bg-[#126280] hover:bg-[#126280]/80 h-10 md:h-12 text-sm md:text-base text-white"
                                     >
