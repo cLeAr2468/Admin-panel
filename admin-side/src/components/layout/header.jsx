@@ -3,14 +3,6 @@ import { Button } from '../ui/button.jsx';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { fetchApi } from '@/lib/api.js';
 
 const DEFAULT_SHOP = {
@@ -63,12 +55,6 @@ const Header = () => {
   }, [slug]);
 
 
-  const handleShopChange = (shop) => {
-    setSelectedShop(shop);
-    localStorage.setItem('selectedShop', shop.slug);
-    localStorage.setItem('selectedShopId', shop.shop_id);
-  };
-
   const currentShop = selectedShop || DEFAULT_SHOP;
 
   return (
@@ -76,6 +62,7 @@ const Header = () => {
       <div className="flex justify-between items-center px-4 md:px-10">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
+            <img src="/laundry-logo.jpg" className="w-10 h-10 rounded-full" alt="Laundry Shop" />
             <Link to={`/${currentShop?.slug}`} className="text-2xl font-bold hover:opacity-80">
               {currentShop?.shop_name || 'Laundry Shop'}
             </Link>
