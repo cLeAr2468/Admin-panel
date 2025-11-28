@@ -1,8 +1,14 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link, useParams } from 'react-router-dom';
+
+const DEFAULT_SHOP_NAME = 'Wise Wash Intelligence';
+
 const Home = () => {
-     const { slug } = useParams();
+    const { slug } = useParams();
+
+    const shopName = slug ? slug : DEFAULT_SHOP_NAME;
+
     return (
         <div className="min-h-screen bg-cover bg-center"
             style={{
@@ -15,16 +21,16 @@ const Home = () => {
                 {/* Hero Section */}
                 <div className="container mx-auto pt-20 px-4">
                     <div className="text-center mb-16">
-                         <h1 className="text-4xl font-bold text-center mb-8">
-                    Welcome to {slug ? slug.replace(/-/g, ' ') : 'Our Shop'}
-                </h1>
+                        <h1 className="text-4xl md:text-5xl font-bold text-[#126280] mb-4">
+                            Welcome to  {shopName ? shopName.replace(/-/g, ' ') : 'Our Shop'}
+                        </h1>
                         <p className="text-xl text-gray-700 mb-8">
                             Professional Laundry & Dry Cleaning Services
                         </p>
                         <Link to="/dashboard">
-                        <Button className="bg-[#126280] text-white px-8 py-6 text-lg hover:bg-[#126280]/90">
-                            Go to Dashboard
-                        </Button>
+                            <Button className="bg-[#126280] text-white px-8 py-6 text-lg hover:bg-[#126280]/90">
+                                Go to Dashboard
+                            </Button>
                         </Link>
                     </div>
 

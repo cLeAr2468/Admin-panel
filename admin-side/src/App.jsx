@@ -25,6 +25,7 @@ import ManageServices from "./components/layout/ManageServices";
 import ManageAbout from "./components/layout/ManageAbout";
 import PaymentMethod from "./components/layout/PaymentMethod";
 import ResetPassword from "./components/layout/ResetPassword";
+import PublicLayout from "./components/layout/PublicLayout";
 
 function AppContent() {
   const location = useLocation();
@@ -58,14 +59,16 @@ function AppContent() {
       <div className="bg-[#A4DCF4] bg-opacity-80 min-h-screen">
         {shouldShowHeader && <Header />}
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/:slug?" element={<Home />} />
-          <Route path="/:slug/about" element={<About />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/prices" element={<Prices />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          {/* Public Pages with Header */}
+          <Route element={<PublicLayout />}>
+            <Route path="/:slug?" element={<Home />} />
+            <Route path="/:slug?/about" element={<About />} />
+            <Route path="/:slug?/services" element={<Services />} />
+            <Route path="/prices" element={<Prices />} />
+            <Route path="/:slug?/login" element={<Login />} />
+            <Route path="/:slug?/reset-password" element={<ResetPassword />} />
+
+          </Route>
 
           {/* Protected Routes */}
           <Route path="/register" element={<Register />} />

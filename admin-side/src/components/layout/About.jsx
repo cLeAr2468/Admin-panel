@@ -5,8 +5,8 @@ import images1 from '../../assets/bg1.jpg';
 import { fetchApi } from '@/lib/api';
 
 const DEFAULT_ABOUT_DATA = {
-    shop_name: 'Laundry Shop',
-    slug: 'laundry-shop',
+    shop_name: 'Wash Wise Intelligence',
+    slug: 'wash-wise-intelligence',
     about: [
         {
             about_id: 1,
@@ -37,14 +37,14 @@ const About = () => {
             try {
                 setLoading(true);
 
-                if (slug === 'laundry-shop') {
+                if (slug === 'wash-wise-intelligence') {
                     setAboutData(DEFAULT_ABOUT_DATA);
                     setLoading(false);
                     return;
                 }
 
                 const response = await fetchApi(`/api/public/shop-about/${slug}`);
-                
+
 
                 if (!response || response.success === false) {
                     throw new Error(response.message || 'Failed to fetch about data');
