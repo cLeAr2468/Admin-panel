@@ -21,10 +21,17 @@ const Login = () => {
         e.preventDefault();
         setError("");
 
+        const shopIdToSend = localStorage.getItem("selectedShopId");
+
+        if (!shopIdToSend) {
+            setError("Invalid shop. Please go back to home page.");
+            return;
+        }
         try {
             const response = await fetchApi('/api/public/admin/login', {
                 method: 'POST',
                 body: JSON.stringify({
+                    shop_id: shopIdToSend,
                     emailOrUsername: username,
                     password: password
                 })

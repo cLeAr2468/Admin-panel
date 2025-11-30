@@ -71,70 +71,75 @@
 //     }
 // };
 
-const API_KEY = import.meta.env.VITE_API_KEY ;
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_KEY = import.meta.env.VITE_API_KEY;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export const fetchApi = async (endpoint, options = {}) => {
-    try {
-        const token = !endpoint.includes('/public/') ? localStorage.getItem('token') : null;
-        const apiKey = import.meta.env.VITE_API_KEY;
+  try {
+    const isPublic = endpoint.includes("/public/");
+    const token = !isPublic ? localStorage.getItem("token") : null;
 
-        
-        const headers = {
-            'Content-Type': 'application/json',
-            'X-API-KEY': apiKey,
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-            ...options.headers
-        };
+    const headers = {
+      "Content-Type": "application/json",
+      "X-API-KEY": API_KEY,
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    };
 
-        const defaultOptions = {
-            method: options.method || 'GET',
-            headers,
-            body: options.body 
-        };
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      method: options.method || "GET",
+      headers,
+      body: options.body,
+    });
 
-        const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
-        const data = await response.json();
+    const data = await res.json();
 
-        if (!response.ok) {
-            throw new Error(data.message || `HTTP error! status: ${response.status}`);
-        }
-
-        return data;
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+    if (res.status === 401) {
+      localStorage.clear();
+      throw new Error("Session expired. Please login again.");
     }
+
+    if (!res.ok) {
+      throw new Error(data.message || `HTTP Error ${res.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("API Error:", error);
+    throw error;
+  }
 };
 
 export const fetchApiFormData = async (endpoint, formData, options = {}) => {
-    try {
-        const token = !endpoint.includes('/public/') ? localStorage.getItem('token') : null;
-        const apiKey = import.meta.env.VITE_API_KEY;
+  try {
+    const token = !endpoint.includes("/public/")
+      ? localStorage.getItem("token")
+      : null;
+    const apiKey = import.meta.env.VITE_API_KEY;
 
-        const headers = {
-            'X-API-KEY': apiKey,
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-            ...options.headers
-            // DO NOT set Content-Type - let browser set it with multipart/form-data boundary
-        };
+    const headers = {
+      "X-API-KEY": apiKey,
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+      // DO NOT set Content-Type - let browser set it with multipart/form-data boundary
+    };
 
-        const defaultOptions = {
-            method: options.method || 'POST',
-            headers,
-            body: formData // formData handles serialization automatically
-        };
+    const defaultOptions = {
+      method: options.method || "POST",
+      headers,
+      body: formData, // formData handles serialization automatically
+    };
 
-        const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
-        const data = await response.json();
+    const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+    const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.message || `HTTP error! status: ${response.status}`);
-        }
-
-        return data;
-    } catch (error) {
-        console.error('API FormData Error:', error);
-        throw error;
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
+
+    return data;
+  } catch (error) {
+    console.error("API FormData Error:", error);
+    throw error;
+  }
 };
