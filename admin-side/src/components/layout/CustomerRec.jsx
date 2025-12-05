@@ -28,6 +28,7 @@ export default function CustomerRec() {
   const { adminData } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState([]);
+  const [smsLoading, setSmsLoading] = useState({});
 
   const parseDateTime = (isoString) => {
     if (!isoString) {
@@ -75,19 +76,8 @@ export default function CustomerRec() {
         throw new Error(response?.message || "Failed to fetch customer records");
       }
 
-      const cusRecord = (response.data || []).map((i) => {
-        const parsedDates = parseDateTime(i.created_at);
-        return {
-          name: i.cus_name,
-          address: i.cus_address,
-          visit: i.batch,
-          items: i.num_items,
-          status: i.status,
-          date: parsedDates.rawDate,
-          time: parsedDates.localTime,
-        }
-      });
-      setData(cusRecord);
+      // Keep full data for logging
+      setData(response.data || []);
     } catch (error) {
       setData([]);
       console.error("CustomerRec - loadCustomerRec error:", error);
@@ -96,6 +86,7 @@ export default function CustomerRec() {
       setIsLoading(false);
     }
   };
+
 
   useEffect(() => {
     loadCustomerRec();
@@ -127,14 +118,48 @@ export default function CustomerRec() {
     setData(newData);
   };
 
-  const handleSendSMS = (customer) => {
-    // TODO: Implement SMS sending functionality
-    alert(`SMS sent to ${customer.name}`);
+  const handleSendSMS = async (customer) => {
+    if (!adminData?.shop_id) return;
+    const parsedDates = parseDateTime(customer.updated_at);
+    console.log("Laundry ID:", customer.laundryId);
+    console.log("Send By(Admin ID):", adminData.id)
+    console.log("Shop ID:", customer.shop_id);
+    console.log("Customer Name:", customer.cus_name);
+    console.log("Customer Phone:", customer.cus_phoneNum);
+    console.log("Customer Phone:", customer.status);
+    console.log("Date:", parsedDates.rawDate);
+    console.log("Time:", parsedDates.localTime);
+
+    const SMS = `Good day, Ma'am/Sir ${customer.cus_name}! As of ${parsedDates.rawDate} ${parsedDates.localTime}, your laundry with Laundry ID ${customer.laundryId} now has the status '${customer.status}.' Thank you very much!`
+
+    try {
+      setSmsLoading((prev) => ({ ...prev, [customer.laundryId]: true }));
+      const req = await fetchApi("/api/auth/send-sms", {
+        method: "POST",
+        body: JSON.stringify({
+          sender_id: "PhilSMS",
+          number: customer.cus_phoneNum,
+          message: SMS
+        })
+      });
+
+      if (req.success && req.data.status === "success") {
+        toast.success("SMS message successfully sent!");
+      } else {
+        toast.error(req.data?.message || "Failed to send SMS");
+      }
+
+    } catch (error) {
+      console.error("SMS error: ", error);
+      toast.error("Network or server error: " + error.message);
+    } finally {
+      setSmsLoading((prev) => ({ ...prev, [customer.laundryId]: false }));
+    }
   };
 
   const handleUpdate = (customer) => {
     // TODO: Implement update functionality
-    alert(`Updating record for ${customer.name}`);
+    alert(`Updating record for ${customer.cus_name}`);
   };
 
   return (
@@ -206,49 +231,56 @@ export default function CustomerRec() {
               <TableCell colSpan={8} className="text-center">Loading...</TableCell>
             </TableRow>
           ) : (
-            filteredData.map((row, index) => (
-              <TableRow
-                key={index}
-                className="bg-white"
-              >
-                <TableCell className="border font-medium">{row.name}</TableCell>
-                <TableCell className="border">{row.address}</TableCell>
-                <TableCell className="border text-center">{row.visit}</TableCell>
-                <TableCell className="border text-center">{row.items}</TableCell>
-                <TableCell className="border">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${row.status === 'Laundry Done' ? 'bg-green-100 text-green-700' :
-                    row.status === 'Ready to pick up' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-sky-100 text-sky-700'
-                    }`}>
-                    {row.status}
-                  </span>
-                </TableCell>
-                <TableCell className="border">
-                  <div className="text-sm">
-                    <div className="font-medium">{row.date}</div>
-                    <div className="text-sky-600">{row.time}</div>
-                  </div>
-                </TableCell>
-                <TableCell className="border text-center">
-                  <Button
-                    variant="secondary"
-                    className="bg-sky-300 hover:bg-sky-400 text-sky-900 font-medium"
-                    onClick={() => handleSendSMS(row)}
-                  >
-                    SEND
-                  </Button>
-                </TableCell>
-                <TableCell className="border text-center">
-                  <Button
-                    variant="outline"
-                    className="bg-orange-300 hover:bg-orange-400 text-orange-900 font-medium"
-                    onClick={() => handleUpdate(row)}
-                  >
-                    UPDATE
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
+            filteredData.map((row, index) => {
+              const parsedDates = parseDateTime(row.updated_at);
+
+              return (
+                <TableRow key={index} className="bg-white">
+                  <TableCell className="border font-medium">{row.cus_name}</TableCell>
+                  <TableCell className="border">{row.cus_address}</TableCell>
+                  <TableCell className="border text-center">{row.batch}</TableCell>
+                  <TableCell className="border text-center">{row.num_items}</TableCell>
+                  <TableCell className="border">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${row.status === "Laundry Done"
+                        ? "bg-green-100 text-green-700"
+                        : row.status === "Ready to pick up"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-sky-100 text-sky-700"
+                        }`}
+                    >
+                      {row.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="border">
+                    <div className="text-sm">
+                      <div className="font-medium">{parsedDates.rawDate}</div>
+                      <div className="text-sky-600">{parsedDates.localTime}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="border text-center">
+                    <Button
+                      variant="secondary"
+                      className="bg-sky-300 hover:bg-sky-400 text-sky-900 font-medium"
+                      onClick={() => handleSendSMS(row)}
+                      disabled={smsLoading[row.laundryId]}
+                    >
+                      {smsLoading[row.laundryId] && <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>}
+                      {smsLoading[row.laundryId] ? "Sending..." : "SEND"}
+                    </Button>
+                  </TableCell>
+                  <TableCell className="border text-center">
+                    <Button
+                      variant="outline"
+                      className="bg-orange-300 hover:bg-orange-400 text-orange-900 font-medium"
+                      onClick={() => handleUpdate(row)}
+                    >
+                      UPDATE
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

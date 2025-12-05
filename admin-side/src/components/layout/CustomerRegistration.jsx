@@ -3,107 +3,108 @@ import { ArrowLeft, Save, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { toast } from 'sonner';
-import { Card, CardContent } from "@/components/ui/card"; 
+import { Card, CardContent } from "@/components/ui/card";
 import { fetchApi } from "@/lib/api";
 import { AuthContext } from "@/context/AuthContext";
+import { formatPHNumber } from "@/lib/phoneFormatter";
 
 // OTP Modal Component
 const OTPModal = ({ open, onClose, onSubmit, onResend, resendDisabled, resendTimer }) => {
-    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-    const inputsRef = React.useRef([]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const inputsRef = React.useRef([]);
 
-    if (!open) return null;
+  if (!open) return null;
 
-    const handleChange = (e, idx) => {
-        const value = e.target.value.replace(/[^0-9]/g, "");
-        if (value.length > 1) return;
-        const newOtp = [...otp];
-        newOtp[idx] = value;
-        setOtp(newOtp);
+  const handleChange = (e, idx) => {
+    const value = e.target.value.replace(/[^0-9]/g, "");
+    if (value.length > 1) return;
+    const newOtp = [...otp];
+    newOtp[idx] = value;
+    setOtp(newOtp);
 
-        if (value && idx < 5) {
-            inputsRef.current[idx + 1].focus();
-        }
-    };
+    if (value && idx < 5) {
+      inputsRef.current[idx + 1].focus();
+    }
+  };
 
-    const handleKeyDown = (e, idx) => {
-        if (e.key === "Backspace" && !otp[idx] && idx > 0) {
-            inputsRef.current[idx - 1].focus();
-        }
-    };
+  const handleKeyDown = (e, idx) => {
+    if (e.key === "Backspace" && !otp[idx] && idx > 0) {
+      inputsRef.current[idx - 1].focus();
+    }
+  };
 
-    const handlePaste = (e) => {
-        const paste = e.clipboardData.getData("text").slice(0, 6).split("");
-        const newOtp = [...otp];
-        paste.forEach((char, idx) => {
-            if (idx < 6) newOtp[idx] = char.replace(/[^0-9]/g, "");
-        });
-        setOtp(newOtp);
-        const lastIdx = paste.length - 1;
-        if (inputsRef.current[lastIdx]) {
-            inputsRef.current[lastIdx].focus();
-        }
-        e.preventDefault();
-    };
+  const handlePaste = (e) => {
+    const paste = e.clipboardData.getData("text").slice(0, 6).split("");
+    const newOtp = [...otp];
+    paste.forEach((char, idx) => {
+      if (idx < 6) newOtp[idx] = char.replace(/[^0-9]/g, "");
+    });
+    setOtp(newOtp);
+    const lastIdx = paste.length - 1;
+    if (inputsRef.current[lastIdx]) {
+      inputsRef.current[lastIdx].focus();
+    }
+    e.preventDefault();
+  };
 
-    const isOtpComplete = otp.every(d => d !== "");
+  const isOtpComplete = otp.every(d => d !== "");
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
-              <div className="flex justify-center mb-2">
-                    <img
-                        src="/password-access.png"
-                        alt="OTP Icon"
-                        className="w-14 h-14"
-                    />
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-center text-[#126280]">Account Verification</h3>
-                <p className="text-sm text-gray-600 mb-4 text-center">Please enter the OTP sent to your email.</p>
-                <div className="flex justify-center gap-2 mb-4" onPaste={handlePaste}>
-                    {otp.map((digit, idx) => (
-                        <input
-                            key={idx}
-                            ref={el => inputsRef.current[idx] = el}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={e => handleChange(e, idx)}
-                            onKeyDown={e => handleKeyDown(e, idx)}
-                            className="w-10 h-12 text-center text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-100"
-                        />
-                    ))}
-                </div>
-                <div className="flex gap-2 mb-2">
-                    <Button
-                        className="w-full bg-[#126280] hover:bg-[#126280]/80 text-white rounded-full font-semibold"
-                        onClick={() => isOtpComplete && onSubmit(otp.join(""))}
-                        disabled={!isOtpComplete}
-                    >
-                        Submit
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="w-full rounded-full"
-                        onClick={onClose}
-                    >
-                        Cancel
-                    </Button>
-                </div>
-                <div className="text-center mt-2">
-                    <Button
-                        variant="ghost"
-                        className="text-blue-600 font-semibold"
-                        onClick={onResend}
-                        disabled={resendDisabled}
-                    >
-                        Resend OTP {resendDisabled && resendTimer > 0 ? `(${resendTimer}s)` : ""}
-                    </Button>
-                </div>
-            </div>
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-[9999]">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
+        <div className="flex justify-center mb-2">
+          <img
+            src="/password-access.png"
+            alt="OTP Icon"
+            className="w-14 h-14"
+          />
         </div>
-    );
+        <h3 className="text-lg font-bold mb-2 text-center text-[#126280]">Account Verification</h3>
+        <p className="text-sm text-gray-600 mb-4 text-center">Please enter the OTP sent to your email.</p>
+        <div className="flex justify-center gap-2 mb-4" onPaste={handlePaste}>
+          {otp.map((digit, idx) => (
+            <input
+              key={idx}
+              ref={el => inputsRef.current[idx] = el}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={e => handleChange(e, idx)}
+              onKeyDown={e => handleKeyDown(e, idx)}
+              className="w-10 h-12 text-center text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-100"
+            />
+          ))}
+        </div>
+        <div className="flex gap-2 mb-2">
+          <Button
+            className="w-full bg-[#126280] hover:bg-[#126280]/80 text-white rounded-full font-semibold"
+            onClick={() => isOtpComplete && onSubmit(otp.join(""))}
+            disabled={!isOtpComplete}
+          >
+            Submit
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full rounded-full"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+        </div>
+        <div className="text-center mt-2">
+          <Button
+            variant="ghost"
+            className="text-blue-600 font-semibold"
+            onClick={onResend}
+            disabled={resendDisabled}
+          >
+            Resend OTP {resendDisabled && resendTimer > 0 ? `(${resendTimer}s)` : ""}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
@@ -136,13 +137,13 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
 
   // Timer effect for resend button
   useEffect(() => {
-      let timer;
-      if (resendDisabled && resendTimer > 0) {
-          timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      } else if (resendTimer === 0) {
-          setResendDisabled(false);
-      }
-      return () => clearTimeout(timer);
+    let timer;
+    if (resendDisabled && resendTimer > 0) {
+      timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+    } else if (resendTimer === 0) {
+      setResendDisabled(false);
+    }
+    return () => clearTimeout(timer);
   }, [resendDisabled, resendTimer]);
 
   const handleInputChange = (e) => {
@@ -158,6 +159,12 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
 
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match!");
+      return;
+    }
+
+    const formattedNumber = formatPHNumber(formData.cus_phoneNum);
+    if (!formattedNumber) {
+      toast.error("Invalid Philippine phone number!");
       return;
     }
 
@@ -177,7 +184,7 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
               user_mName: formData.cus_mName,
               user_address: formData.cus_address,
               username: formData.cus_username || `${formData.cus_lName}.${formData.cus_fName}`.toLowerCase(),
-              contactNum: formData.cus_phoneNum,
+              contactNum: formattedNumber,
               email: formData.cus_eMail,
               role: formData.cus_role,
               status: "ACTIVE",
@@ -206,11 +213,6 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
         registeredBy: registeredBy
       });
 
-      if (onSave) {
-        onSave(response);
-      }
-
-      // onClose();
 
       toast.success("Customer registered successfully!");
 
@@ -226,17 +228,18 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
 
   // Dummy OTP submit handler
   const handleOTPSubmit = (otp) => {
-      // Add OTP verification logic here
-      setShowOTPModal(false);
-      toast.success("OTP verified successfully!");
-      onClose();
+    // Add OTP verification logic here
+    setShowOTPModal(false);
+    toast.success("OTP verified successfully!");
+    if (onSave) onSave("SUCCESS");
+    onClose();
   };
 
   // Dummy resend OTP handler
   const handleResendOTP = () => {
-      // Add resend OTP logic here
-      setResendDisabled(true);
-      setResendTimer(30); // 30 seconds cooldown
+    // Add resend OTP logic here
+    setResendDisabled(true);
+    setResendTimer(30); // 30 seconds cooldown
   };
 
   return (
@@ -413,12 +416,12 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
       </div>
 
       <OTPModal
-          open={showOTPModal}
-          onClose={() => setShowOTPModal(false)}
-          onSubmit={handleOTPSubmit}
-          onResend={handleResendOTP}
-          resendDisabled={resendDisabled}
-          resendTimer={resendTimer}
+        open={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        onSubmit={handleOTPSubmit}
+        onResend={handleResendOTP}
+        resendDisabled={resendDisabled}
+        resendTimer={resendTimer}
       />
     </div>
   );
