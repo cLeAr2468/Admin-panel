@@ -24,6 +24,7 @@ const Header = () => {
       try {
 
         if (!slug) {
+          localStorage.removeItem('selectedShopName');
           localStorage.removeItem('selectedShop');
           localStorage.removeItem('selectedShopId');
           setSelectedShop(DEFAULT_SHOP);
@@ -33,12 +34,14 @@ const Header = () => {
         const response = await fetchApi(`/api/public/shop-slug/${slug}`);
 
         if (!response.success) {
+          localStorage.removeItem('selectedShopName');
           localStorage.removeItem('selectedShop');
           localStorage.removeItem('selectedShopId');
           setSelectedShop(DEFAULT_SHOP);
           return;
         }
 
+        localStorage.setItem('selectedShopName', response.data.shop_name);
         localStorage.setItem('selectedShop', response.data.slug);
         localStorage.setItem('selectedShopId', response.data.shop_id);
         setSelectedShop(response.data);
@@ -46,6 +49,7 @@ const Header = () => {
       } catch (err) {
         console.error("Slug check failed:", err);
         setSelectedShop(DEFAULT_SHOP);
+        localStorage.removeItem('selectedShopName');
         localStorage.removeItem('selectedShop');
         localStorage.removeItem('selectedShopId');
       }
