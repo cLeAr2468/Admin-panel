@@ -403,7 +403,8 @@ const CustomerReceipt = ({ onClose }) => {
         num_items: parseInt(formData.itemCount) || 0,
         cleaning_products: transformedString,
         total_amount: parseFloat(formData.totalAmount) || 0,
-        payment_status: getPaymentStatus()
+        payment_status: getPaymentStatus(),
+        process_by: "ADMIN"
       };
 
       const response = await fetchApi('/api/customers/laundry-record', {

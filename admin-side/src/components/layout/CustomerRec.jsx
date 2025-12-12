@@ -20,6 +20,7 @@ import { Search, Filter } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 import { fetchApi } from "@/lib/api";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 export default function CustomerRec() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,7 +76,7 @@ export default function CustomerRec() {
       if (!response || response === false) {
         throw new Error(response?.message || "Failed to fetch customer records");
       }
-
+      console.log(response)
       // Keep full data for logging
       setData(response.data || []);
     } catch (error) {
@@ -157,10 +158,49 @@ export default function CustomerRec() {
     }
   };
 
-  const handleUpdate = (customer) => {
-    // TODO: Implement update functionality
-    alert(`Updating record for ${customer.cus_name}`);
+  const handleUpdate = async (customer) => {
+    let nextStatus = "";
+
+    if (customer.status === "On Service") {
+      nextStatus = "Ready to pick up";
+    } else if (customer.status === "Ready to pick up") {
+      nextStatus = "Laundry Done";
+    } else {
+      return;
+    }
+
+    try {
+      const res = await fetchApi(`/api/auth/update-laundry-status/${customer.laundryId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          service_status: nextStatus
+        })
+      });
+
+      if (!res.success) {
+        toast.error(res.message || "Failed to update status");
+        return;
+      }
+
+      toast.success("Service status updated!");
+
+      setData(prevData =>
+        prevData.map(item =>
+          item.laundryId === customer.laundryId
+            ? { ...item, status: nextStatus, updated_at: new Date().toISOString() }
+            : item
+        )
+      );
+
+    } catch (error) {
+      console.error("Status update failed:", error);
+      toast.error("Server error while updating status");
+    }
   };
+
+
+  const today = new Date();
+  const formattedDate = format(today, "MMMM dd, yyyy");
 
   return (
     <div className="p-6 bg-sky-100 min-h-screen">
@@ -181,7 +221,7 @@ export default function CustomerRec() {
             </div>
           </div>
           <p className="text-sky-700 font-medium bg-sky-50 px-4 py-2 rounded-lg border border-sky-200">
-            Date: <span className="font-semibold">September 16, 2025</span>
+            Date: <span className="font-semibold">{formattedDate}</span>
           </p>
         </div>
       </div>
@@ -272,10 +312,11 @@ export default function CustomerRec() {
                   <TableCell className="border text-center">
                     <Button
                       variant="outline"
-                      className="bg-orange-300 hover:bg-orange-400 text-orange-900 font-medium"
+                      className="bg-orange-300 hover:bg-orange-400 text-orange-900 font-medium disabled:opacity-50"
                       onClick={() => handleUpdate(row)}
+                      disabled={row.status === "Laundry Done"}
                     >
-                      UPDATE
+                      {row.status === "Laundry Done" ? "COMPLETED" : "UPDATE"}
                     </Button>
                   </TableCell>
                 </TableRow>
