@@ -73,7 +73,7 @@ function Inventory() {
             description: item.item_description,
             quantity: parseInt(item.item_quantity, 10),
             unitPrice: parseFloat(item.item_uPrice),
-            reorderLevel: parseFloat(item.item_reoderLevel, 10),
+            reorderLevel: parseFloat(item.item_reorderLevel, 10),
             dateAdded: item.date_added
           };
         });
