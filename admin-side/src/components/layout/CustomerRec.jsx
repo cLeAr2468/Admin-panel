@@ -76,8 +76,6 @@ export default function CustomerRec() {
       if (!response || response === false) {
         throw new Error(response?.message || "Failed to fetch customer records");
       }
-      console.log(response)
-      // Keep full data for logging
       setData(response.data || []);
     } catch (error) {
       setData([]);
@@ -122,14 +120,14 @@ export default function CustomerRec() {
   const handleSendSMS = async (customer) => {
     if (!adminData?.shop_id) return;
     const parsedDates = parseDateTime(customer.updated_at);
-    console.log("Laundry ID:", customer.laundryId);
-    console.log("Send By(Admin ID):", adminData.id)
-    console.log("Shop ID:", customer.shop_id);
-    console.log("Customer Name:", customer.cus_name);
-    console.log("Customer Phone:", customer.cus_phoneNum);
-    console.log("Customer Phone:", customer.status);
-    console.log("Date:", parsedDates.rawDate);
-    console.log("Time:", parsedDates.localTime);
+    // console.log("Laundry ID:", customer.laundryId);
+    // console.log("Send By(Admin ID):", adminData.id)
+    // console.log("Shop ID:", customer.shop_id);
+    // console.log("Customer Name:", customer.cus_name);
+    // console.log("Customer Phone:", customer.cus_phoneNum);
+    // console.log("Customer Phone:", customer.status);
+    // console.log("Date:", parsedDates.rawDate);
+    // console.log("Time:", parsedDates.localTime);
 
     const SMS = `Good day, Ma'am/Sir ${customer.cus_name}! As of ${parsedDates.rawDate} ${parsedDates.localTime}, your laundry with Laundry ID ${customer.laundryId} now has the status '${customer.status}.' Thank you very much!`
 
