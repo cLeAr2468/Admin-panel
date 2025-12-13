@@ -1,13 +1,15 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchApi } from "@/lib/api";
 import { AuthContext } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { DEFAULT_SHOP, verifySlug } from "@/lib/shop";
 
 const Login = () => {
+    const [isLoading, setIsLoading] = useState(false);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -16,6 +18,16 @@ const Login = () => {
     const navigate = useNavigate();
     const { login } = useContext(AuthContext);
     const [email, setEmail] = useState('');
+    const { slug } = useParams();
+    const [selectedShop, setSelectedShop] = useState(null);
+
+    useEffect(() => {
+        const load = async () => {
+            const shop = await verifySlug(slug);
+            setSelectedShop(shop);
+        };
+        load();
+    }, [slug]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -28,30 +40,43 @@ const Login = () => {
             return;
         }
         try {
-            const response = await fetchApi('/api/public/admin/login', {
-                method: 'POST',
-                body: JSON.stringify({
-                    shop_id: shopIdToSend,
-                    emailOrUsername: username,
-                    password: password
-                })
-            });
+            setIsLoading(true);
+            toast.promise(
+                (async () => {
+                    const response = await fetchApi('/api/public/admin/login', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            shop_id: shopIdToSend,
+                            emailOrUsername: username,
+                            password: password
+                        })
+                    });
 
-            if (!response.message || !response.token) {
-                throw new Error("Invalid response from server");
-            }
+                    if (!response.message || !response.token) {
+                        throw new Error("Invalid response from server");
+                    }
 
-            const token = response.token.replace('Bearer ', '');
-            login(response.admin, token, response.apiKey);
+                    const token = response.token.replace('Bearer ', '');
+                    login(response.admin, token, response.apiKey);
 
-            setTimeout(() => {
-                toast.success("Login successfully!");
-                navigate("/dashboard");
-            }, 2000);
 
+                    await new Promise((resolve) => setTimeout(resolve, 800));
+
+                    navigate(currentShop ? `/${currentShop.slug}/dashboard` : '/dashboard');
+
+                    return response;
+                })(),
+                {
+                    loading: "Logging in...",
+                    success: "Login successful!",
+                    error: (err) => err.message || "Invalid credentials",
+                },
+            );
         } catch (error) {
             console.error('Login error:', error);
             setError(error.message || "Invalid credentials. Please try again.");
+        } finally {
+            setIsLoading(true);
         }
     };
 
@@ -92,6 +117,8 @@ const Login = () => {
             throw error;
         }
     };
+
+    const currentShop = selectedShop || DEFAULT_SHOP;
 
     return (
         <div className="min-h-screen bg-cover bg-center"
@@ -169,8 +196,9 @@ const Login = () => {
                                     <Button
                                         type="submit"
                                         className="w-full mt-2 md:mt-4 bg-[#126280] hover:bg-[#126280]/80 h-10 md:h-12 text-sm md:text-base text-white"
+                                        disabled={isLoading}
                                     >
-                                        Login
+                                        {isLoading ? "Logging in..." : <>Login</>}
                                     </Button>
                                 </form>
 

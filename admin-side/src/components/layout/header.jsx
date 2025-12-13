@@ -1,15 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Button } from '../ui/button.jsx';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown, ArrowBigRight } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../ui/card';
 import { fetchApi } from '@/lib/api.js';
-
-const DEFAULT_SHOP = {
-  shop_name: 'Wash Wise Intelligence',
-  slug: 'wash-wise-intelligence',
-  shop_id: 'LMSS-00000'
-};
+import { DEFAULT_SHOP, verifySlug } from '@/lib/shop.js';
+import { AuthContext } from '@/context/AuthContext.jsx';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,46 +14,17 @@ const Header = () => {
   const [selectedShop, setSelectedShop] = useState(null);
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { adminData, token } = useContext(AuthContext);
 
   useEffect(() => {
-    const verifySlug = async () => {
-      try {
-
-        if (!slug) {
-          localStorage.removeItem('selectedShopName');
-          localStorage.removeItem('selectedShop');
-          localStorage.removeItem('selectedShopId');
-          setSelectedShop(DEFAULT_SHOP);
-          return;
-        }
-
-        const response = await fetchApi(`/api/public/shop-slug/${slug}`);
-
-        if (!response.success) {
-          localStorage.removeItem('selectedShopName');
-          localStorage.removeItem('selectedShop');
-          localStorage.removeItem('selectedShopId');
-          setSelectedShop(DEFAULT_SHOP);
-          return;
-        }
-
-        localStorage.setItem('selectedShopName', response.data.shop_name);
-        localStorage.setItem('selectedShop', response.data.slug);
-        localStorage.setItem('selectedShopId', response.data.shop_id);
-        setSelectedShop(response.data);
-
-      } catch (err) {
-        console.error("Slug check failed:", err);
-        setSelectedShop(DEFAULT_SHOP);
-        localStorage.removeItem('selectedShopName');
-        localStorage.removeItem('selectedShop');
-        localStorage.removeItem('selectedShopId');
-      }
+    const load = async () => {
+      const shop = await verifySlug(slug);
+      setSelectedShop(shop);
     };
-
-    verifySlug();
+    load();
   }, [slug]);
 
+  const isLoggedIn = (adminData && token);
 
   const currentShop = selectedShop || DEFAULT_SHOP;
 
@@ -99,15 +66,26 @@ const Header = () => {
               </Link>
             </li>
           </ul>
-          <Link to={currentShop ? `/${currentShop.slug}/login` : '/login'}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-white border-[#126280] bg-[#126280] hover:bg-white hover:text-slate-900 font-bold"
-            >
-              LOGIN
-            </Button>
-          </Link>
+          {isLoggedIn ? (
+            <Link to={currentShop ? `/${currentShop.slug}/dashboard` : '/dashboard'}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-white border-[#126280] bg-[#126280] hover:bg-white hover:text-slate-900 font-bold"
+              >
+                Back to dashboard <ArrowBigRight />
+              </Button>
+            </Link>) : (
+            <Link to={currentShop ? `/${currentShop.slug}/login` : '/login'}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-white border-[#126280] bg-[#126280] hover:bg-white hover:text-slate-900 font-bold"
+              >
+                LOGIN
+              </Button>
+            </Link>
+          )}
         </nav>
 
         <div className="md:hidden">
@@ -131,15 +109,26 @@ const Header = () => {
               <li><Link to={currentShop ? `/${currentShop.slug}/services` : '/services'} className="hover:underline">SERVICES</Link></li>
               <li><Link to={currentShop ? `/${currentShop.slug}/prices` : '/prices'} className="hover:underline">PRICES</Link></li>
             </ul>
-            <Link to="/login" className="w-full">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-white border-white hover:bg-white hover:text-slate-900"
-              >
-                LOGIN
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link to={currentShop ? `/${currentShop.slug}/dashboard` : '/dashboard'}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-white border-[#126280] bg-[#126280] hover:bg-white hover:text-slate-900 font-bold"
+                >
+                  Back to dashboard <ArrowBigRight />
+                </Button>
+              </Link>) : (
+              <Link to={currentShop ? `/${currentShop.slug}/login` : '/login'}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-white border-[#126280] bg-[#126280] hover:bg-white hover:text-slate-900 font-bold"
+                >
+                  LOGIN
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
       )}
