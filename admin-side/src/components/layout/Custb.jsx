@@ -39,13 +39,10 @@ const Custb = ({ embedded = false }) => {
         if (!response.success) {
           throw new Error("Failed to fetch users");
         }
-
-        console.log("API response:", response);
         const adminUsers = response.data.filter(user => user.registered_by === "CUSTOMER" && user.shop_id === adminData.shop_id);
         const formattedUsers = adminUsers.map(user => {
           const parsedDate = user.date_registered ? new Date(user.date_registered) : null;
           const middleName = user.user_mName && user.user_mName !== "null" ? ` ${user.user_mName}` : "";
-          console.log(adminUsers)
           return {
             id: user.user_id,
             name: `${user.user_lName}, ${user.user_fName}${middleName}`,

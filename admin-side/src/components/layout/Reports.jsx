@@ -27,6 +27,7 @@ const Reports = () => {
   const [toDate, setToDate] = useState(getCurrentDateString());
   const [itemRows, setItemRows] = useState([]);
   const [transactionRows, setransactionRows] = useState([]);
+  const [saleRows, setSaleRows] = useState([])
   const { adminData } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -89,7 +90,23 @@ const Reports = () => {
           total: parseFloat(i.total_amount),
           status: transStatus
         }
+      });
+
+      const filterdSales = response.data.filter(i => i.payment_status === "PAID");
+      const sales = (filterdSales || []).map((i) => {
+         return {
+          date: moment(i.created_at).format('YYYY-MM-DD'),
+          saleId: i.laundryId,
+          service: i.service,
+          cleaning_product: i.cleaning_products,
+          qty: parseFloat(i.num_items),
+          kl: i.kg,
+          amount: parseFloat(i.total_amount),
+          taxRate: 0.1
+         }
       })
+
+      setSaleRows(sales);
       setransactionRows(transactions);
     } catch (error) {
       console.error("Reports - loadTransactions error:", error);
@@ -100,13 +117,14 @@ const Reports = () => {
   }
 
   useEffect(() => {
+    setSaleRows();
     loadItems();
     loadTransactions();
   }, [adminData]);
   // Mock data modeled on screenshots
-  const salesRows = [
-    { date: '2025-05-30', itemNo: 'L001', service: 'Wash', description: 'Basic washing service', price: 150, qty: 20, kl: 15, amount: 150, taxRate: 0.1 },
-  ];
+  // const salesRows = [
+  //   { date: '2025-05-30', saleId: 'L001', service: 'Wash', cleaning_product: 'Basic washing service', price: 150, qty: 20, kl: 15, amount: 150, taxRate: 0.1 },
+  // ];
 
   // const itemRows = [
   //   { id: '001', name: 'Laundry Detergent', category: 'Consumable', quantity: 20, price: 5.0, dateAdded: '2025-05-01', lastUpdated: '2025-05-29' },
@@ -129,7 +147,11 @@ const Reports = () => {
     return d >= f && d <= t;
   };
 
-  const filteredSales = useMemo(() => salesRows.filter(r => inRange(r.date)), [fromDate, toDate]);
+  // const filteredSales = useMemo(() => salesRows.filter(r => inRange(r.date)), [fromDate, toDate]);
+    const filteredSales = useMemo(() => {
+    if (!Array.isArray(saleRows)) return [];
+    return saleRows.filter(r => inRange(r.date));
+  }, [saleRows, fromDate, toDate]);
   const filteredItems = useMemo(() => {
     if (!Array.isArray(itemRows)) return [];
     return itemRows.filter(r => inRange(r.dateAdded));
@@ -196,10 +218,10 @@ const Reports = () => {
                     <thead className="text-slate-600">
                       <tr className="border-b border-slate-200">
                         <th className="py-2 pr-4">Date</th>
-                        <th className="py-2 pr-4">Item No</th>
+                        <th className="py-2 pr-4">Sales No</th>
                         <th className="py-2 pr-4">Service Name</th>
-                        <th className="py-2 pr-4">Description</th>
-                        <th className="py-2 pr-4">Price</th>
+                        <th className="py-2 pr-4">Cleaning Items</th>
+                        {/* <th className="py-2 pr-4">Price</th> */}
                         <th className="py-2 pr-4">Qty</th>
                         <th className="py-2 pr-4">KL</th>
                         <th className="py-2 pr-4">Amount</th>
@@ -215,10 +237,10 @@ const Reports = () => {
                         return (
                           <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/50">
                             <td className="py-2 pr-4">{r.date}</td>
-                            <td className="py-2 pr-4 font-medium">{r.itemNo}</td>
+                            <td className="py-2 pr-4 font-medium">{r.saleId}</td>
                             <td className="py-2 pr-4">{r.service}</td>
-                            <td className="py-2 pr-4">{r.description}</td>
-                            <td className="py-2 pr-4">₱{r.price.toFixed(2)}</td>
+                            <td className="py-2 pr-4">{r.cleaning_product}</td>
+                            {/* <td className="py-2 pr-4">₱{r.price.toFixed(2)}</td> */}
                             <td className="py-2 pr-4">{r.qty}</td>
                             <td className="py-2 pr-4">{r.kl}</td>
                             <td className="py-2 pr-4">₱{r.amount.toFixed(2)}</td>
