@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { X, Search, Calculator, Printer, ChevronDown, CheckCheckIcon, Check } from "lucide-react";
+import { X, Search, Calculator, Printer, ChevronDown, Check } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
@@ -51,6 +51,8 @@ const CustomerReceipt = ({ onClose }) => {
 
   const [inventoryItems, setInventoryItems] = useState([]); // raw items from API, includes item_quantity, item_uPrice
   const [selectedInventory, setSelectedInventory] = useState([]); // { item_id, name, unitPrice, qty, subtotal, stockBefore }
+  const [inventorySearchQuery, setInventorySearchQuery] = useState(""); // search query for inventory items
+  const [filteredInventoryItems, setFilteredInventoryItems] = useState([]); // filtered inventory items
 
   useEffect(() => {
     const fetchServiceItems = async () => {
@@ -114,6 +116,7 @@ const CustomerReceipt = ({ onClose }) => {
         if (!res || res.success === false) {
           console.error("Failed to fetch inventory items", res?.message);
           setInventoryItems([]);
+          setFilteredInventoryItems([]);
           return;
         }
         // Normalize unit price to number
@@ -122,9 +125,11 @@ const CustomerReceipt = ({ onClose }) => {
           item_uPrice: parseFloat(i.item_uPrice) || 0
         }));
         setInventoryItems(items);
+        setFilteredInventoryItems(items);
       } catch (err) {
         console.error("Error fetching inventory:", err);
         setInventoryItems([]);
+        setFilteredInventoryItems([]);
       }
     };
 
@@ -290,6 +295,20 @@ const CustomerReceipt = ({ onClose }) => {
         subtotal: +(newQty * si.unitPrice).toFixed(2)
       };
     }));
+  };
+
+  // Filter inventory items based on search query
+  const handleInventorySearch = (query) => {
+    setInventorySearchQuery(query);
+    if (!query.trim()) {
+      setFilteredInventoryItems(inventoryItems);
+      return;
+    }
+    const searchTerm = query.toLowerCase();
+    const filtered = inventoryItems.filter(item =>
+      item.item_name.toLowerCase().includes(searchTerm)
+    );
+    setFilteredInventoryItems(filtered);
   };
 
   // Recalculate totals including inventory items
@@ -1113,11 +1132,24 @@ const CustomerReceipt = ({ onClose }) => {
           <div className="mb-6 border rounded-lg bg-white p-4">
             <h3 className="text-lg font-semibold text-slate-800 mb-3">Shop Inventory Items</h3>
 
+            {/* Search Input for Inventory */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
+              <Input
+                value={inventorySearchQuery}
+                onChange={(e) => handleInventorySearch(e.target.value)}
+                placeholder="Search inventory items..."
+                className="pl-10 bg-slate-50 border-slate-300"
+              />
+            </div>
+
             {inventoryItems.length === 0 ? (
               <p className="text-gray-500">No inventory items found.</p>
+            ) : filteredInventoryItems.length === 0 ? (
+              <p className="text-gray-500">No items match your search.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {inventoryItems.map(item => {
+                {filteredInventoryItems.map(item => {
                   const isSelected = !!selectedInventory.find(si => si.item_id === item.item_id);
                   const selectedObj = selectedInventory.find(si => si.item_id === item.item_id);
                   return (
@@ -1133,19 +1165,23 @@ const CustomerReceipt = ({ onClose }) => {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleInventoryItem(item)}
-                          className="h-4 w-4"
+                          className="h-4 w-4 cursor-pointer"
                         />
 
                         {isSelected && (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              min="1"
-                              value={selectedObj.qty}
-                              onChange={(e) => handleInventoryQtyChange(item.item_id, e.target.value)}
-                              className="w-20"
-                            />
-                            <div className="text-sm">₱{(selectedObj.subtotal || 0).toFixed(2)}</div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-600">Quantity:</label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={selectedObj.qty}
+                                onChange={(e) => handleInventoryQtyChange(item.item_id, e.target.value)}
+                                className="w-20 h-8"
+                                placeholder="Qty"
+                              />
+                              <div className="text-sm font-semibold text-green-700">₱{(selectedObj.subtotal || 0).toFixed(2)}</div>
+                            </div>
                           </div>
                         )}
                       </div>
