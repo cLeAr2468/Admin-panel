@@ -40,7 +40,6 @@ const Login = () => {
             return;
         }
         try {
-            setIsLoading(true);
             toast.promise(
                 (async () => {
                     const response = await fetchApi('/api/public/admin/login', {
@@ -75,8 +74,6 @@ const Login = () => {
         } catch (error) {
             console.error('Login error:', error);
             setError(error.message || "Invalid credentials. Please try again.");
-        } finally {
-            setIsLoading(true);
         }
     };
 
@@ -196,9 +193,9 @@ const Login = () => {
                                     <Button
                                         type="submit"
                                         className="w-full mt-2 md:mt-4 bg-[#126280] hover:bg-[#126280]/80 h-10 md:h-12 text-sm md:text-base text-white"
-                                        disabled={isLoading}
+                                        
                                     >
-                                        {isLoading ? "Logging in..." : <>Login</>}
+                                        Login
                                     </Button>
                                 </form>
 
