@@ -26,6 +26,7 @@ import UserPersonalInfo from "./UserPersonalInfo";
 import UserEditModal from "./UserEditModal";
 import { fetchApi } from "@/lib/api";
 import { AuthContext } from "@/context/AuthContext";
+import { formatPHNumber } from "@/lib/phoneFormatter";
 
 const UserTable = ({ embedded = false }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -113,6 +114,8 @@ const UserTable = ({ embedded = false }) => {
       return;
     }
 
+    const formattedNumber = formatPHNumber(formData.phoneNumber);
+
     try {
       setIsLoading(true);
 
@@ -130,11 +133,12 @@ const UserTable = ({ embedded = false }) => {
             user_mName: formData.middleName || null,
             user_address: formData.address,
             username: formData.username || `${formData.firstName}.${formData.lastName}`.toLowerCase(),
-            contactNum: formData.phoneNumber,
+            contactNum: formattedNumber,
             email: formData.email,
             role: formData.role,
-            status: "Active",
+            status: "ACTIVE",
             password: formData.password,
+            registered_by: "ADMIN"
           }),
         }
       );

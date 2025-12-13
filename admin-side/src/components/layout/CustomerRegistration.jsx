@@ -3,108 +3,11 @@ import { ArrowLeft, Save, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { toast } from 'sonner';
-import { Card, CardContent } from "@/components/ui/card"; 
+import { Card, CardContent } from "@/components/ui/card";
 import { fetchApi } from "@/lib/api";
 import { AuthContext } from "@/context/AuthContext";
-
-// OTP Modal Component
-const OTPModal = ({ open, onClose, onSubmit, onResend, resendDisabled, resendTimer }) => {
-    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-    const inputsRef = React.useRef([]);
-
-    if (!open) return null;
-
-    const handleChange = (e, idx) => {
-        const value = e.target.value.replace(/[^0-9]/g, "");
-        if (value.length > 1) return;
-        const newOtp = [...otp];
-        newOtp[idx] = value;
-        setOtp(newOtp);
-
-        if (value && idx < 5) {
-            inputsRef.current[idx + 1].focus();
-        }
-    };
-
-    const handleKeyDown = (e, idx) => {
-        if (e.key === "Backspace" && !otp[idx] && idx > 0) {
-            inputsRef.current[idx - 1].focus();
-        }
-    };
-
-    const handlePaste = (e) => {
-        const paste = e.clipboardData.getData("text").slice(0, 6).split("");
-        const newOtp = [...otp];
-        paste.forEach((char, idx) => {
-            if (idx < 6) newOtp[idx] = char.replace(/[^0-9]/g, "");
-        });
-        setOtp(newOtp);
-        const lastIdx = paste.length - 1;
-        if (inputsRef.current[lastIdx]) {
-            inputsRef.current[lastIdx].focus();
-        }
-        e.preventDefault();
-    };
-
-    const isOtpComplete = otp.every(d => d !== "");
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
-              <div className="flex justify-center mb-2">
-                    <img
-                        src="/password-access.png"
-                        alt="OTP Icon"
-                        className="w-14 h-14"
-                    />
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-center text-[#126280]">Account Verification</h3>
-                <p className="text-sm text-gray-600 mb-4 text-center">Please enter the OTP sent to your email.</p>
-                <div className="flex justify-center gap-2 mb-4" onPaste={handlePaste}>
-                    {otp.map((digit, idx) => (
-                        <input
-                            key={idx}
-                            ref={el => inputsRef.current[idx] = el}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={e => handleChange(e, idx)}
-                            onKeyDown={e => handleKeyDown(e, idx)}
-                            className="w-10 h-12 text-center text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-100"
-                        />
-                    ))}
-                </div>
-                <div className="flex gap-2 mb-2">
-                    <Button
-                        className="w-full bg-[#126280] hover:bg-[#126280]/80 text-white rounded-full font-semibold"
-                        onClick={() => isOtpComplete && onSubmit(otp.join(""))}
-                        disabled={!isOtpComplete}
-                    >
-                        Submit
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="w-full rounded-full"
-                        onClick={onClose}
-                    >
-                        Cancel
-                    </Button>
-                </div>
-                <div className="text-center mt-2">
-                    <Button
-                        variant="ghost"
-                        className="text-blue-600 font-semibold"
-                        onClick={onResend}
-                        disabled={resendDisabled}
-                    >
-                        Resend OTP {resendDisabled && resendTimer > 0 ? `(${resendTimer}s)` : ""}
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
-};
+import { formatPHNumber } from "@/lib/phoneFormatter";
+import OTPModal from "@/components/modals/OTPModal";
 
 const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
   const [formData, setFormData] = useState({
@@ -129,21 +32,26 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
     }));
   }, [registeredBy]);
 
-  // OTP Modal state
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [sendingOTP, setSendingOTP] = useState(false);
 
-  // Timer effect for resend button
-  useEffect(() => {
-      let timer;
-      if (resendDisabled && resendTimer > 0) {
-          timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      } else if (resendTimer === 0) {
-          setResendDisabled(false);
-      }
-      return () => clearTimeout(timer);
-  }, [resendDisabled, resendTimer]);
+useEffect(() => {
+  let interval;
+
+  if (resendDisabled && resendTimer > 0) {
+    interval = setInterval(() => {
+      setResendTimer(prev => prev - 1);
+    }, 1000);
+  } else if (resendDisabled && resendTimer === 0) {
+    setResendDisabled(false); // enable button when timer reaches 0
+  }
+
+  return () => clearInterval(interval);
+}, [resendDisabled, resendTimer]);
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -161,83 +69,107 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
       return;
     }
 
-    try {
-      const response = await fetchApi(
-        '/api/auth/register-user',
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(
-            {
-              shop_id: adminData.shop_id,
-              user_fName: formData.cus_fName,
-              user_lName: formData.cus_lName,
-              user_mName: formData.cus_mName,
-              user_address: formData.cus_address,
-              username: formData.cus_username || `${formData.cus_lName}.${formData.cus_fName}`.toLowerCase(),
-              contactNum: formData.cus_phoneNum,
-              email: formData.cus_eMail,
-              role: formData.cus_role,
-              status: "ACTIVE",
-              password: formData.password,
-              registered_by: "CUSTOMER"
-            }
-          ),
-        }
-      );
-      console.log(adminData.shop_id);
-      if (response.success === false) {
-        throw new Error(response.message || "Failed to register customer");
-      }
+    const formattedNumber = formatPHNumber(formData.cus_phoneNum);
+    if (!formattedNumber) {
+      toast.error("Invalid Philippine phone number!");
+      return;
+    }
 
-      setFormData({
-        cus_fName: "",
-        cus_lName: "",
-        cus_mName: "",
-        cus_eMail: "",
-        cus_role: "CUSTOMER",
-        cus_phoneNum: "",
-        cus_address: "",
-        cus_username: "",
-        password: "",
-        confirmPassword: "",
-        registeredBy: registeredBy
+    try {
+      setSendingOTP(true);
+      const response = await fetchApi("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.cus_eMail })
       });
 
-      if (onSave) {
-        onSave(response);
-      }
+      if (!response.success) throw new Error(response.message || "Something went wrong");
 
-      // onClose();
-
-      toast.success("Customer registered successfully!");
-
-      // Show OTP modal after successful registration
       setShowOTPModal(true);
       setResendDisabled(true);
-      setResendTimer(30); // 30 seconds cooldown
-    } catch (error) {
-      console.error("Error registering customer:", error);
-      toast.error(error.message || "Failed to register customer");
+      setResendTimer(30); // 3 mins
+
+    } catch (err) {
+      console.error("API error:", err);
+      toast.error(err.message || "Something went wrong");
+    } finally {
+      setSendingOTP(false);
     }
   };
 
-  // Dummy OTP submit handler
-  const handleOTPSubmit = (otp) => {
-      // Add OTP verification logic here
+
+  const handleOTPSubmit = async (otp) => {
+    try {
+      const verify = await fetchApi("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.cus_eMail, otp })
+      });
+
+      if (!verify.success) {
+        toast.error("Invalid OTP");
+        return;
+      }
+      const formattedNumber = formatPHNumber(formData.cus_phoneNum);
+
+      const register = await fetchApi("/api/auth/register-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shop_id: adminData.shop_id,
+          user_fName: formData.cus_fName,
+          user_lName: formData.cus_lName,
+          user_mName: formData.cus_mName,
+          user_address: formData.cus_address,
+          username: formData.cus_username,
+          contactNum: formattedNumber,
+          email: formData.cus_eMail,
+          role: formData.cus_role,
+          status: "ACTIVE",
+          password: formData.password,
+          registered_by: "CUSTOMER"
+        })
+      });
+
+      if (!register.success) {
+        toast.error(register.message || "Failed to register customer");
+        return;
+      }
+
+      toast.success(register.message || "Customer registered successfully!");
       setShowOTPModal(false);
-      toast.success("OTP verified successfully!");
+      onSave?.("SUCCESS");
       onClose();
+
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Something went wrong");
+    }
   };
 
-  // Dummy resend OTP handler
-  const handleResendOTP = () => {
-      // Add resend OTP logic here
+
+  const handleResendOTP = async () => {
+    try {
       setResendDisabled(true);
-      setResendTimer(30); // 30 seconds cooldown
+      setResendTimer(30);
+      toast("Resending OTP...");
+
+      const response = await fetchApi("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.cus_eMail })
+      });
+
+      if (!response.success) throw new Error(response.message || "Failed to resend OTP");
+
+      toast.success("OTP resent successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to resend OTP");
+      setResendDisabled(false);
+    }
   };
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -403,9 +335,9 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
               <Button
                 type="submit"
                 className="bg-slate-600 hover:bg-slate-700 px-6"
+                disabled={sendingOTP}
               >
-                <Save className="h-4 w-4 mr-2" />
-                Save Customer
+                {sendingOTP ? "Sending OTP..." : <><Save className="h-4 w-4 mr-2" />Save Customer</>}
               </Button>
             </div>
           </form>
@@ -413,12 +345,12 @@ const CustomerRegistration = ({ onClose, onSave, registeredBy }) => {
       </div>
 
       <OTPModal
-          open={showOTPModal}
-          onClose={() => setShowOTPModal(false)}
-          onSubmit={handleOTPSubmit}
-          onResend={handleResendOTP}
-          resendDisabled={resendDisabled}
-          resendTimer={resendTimer}
+        open={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        onSubmit={handleOTPSubmit}
+        onResend={handleResendOTP}
+        resendDisabled={resendDisabled}
+        resendTimer={resendTimer}
       />
     </div>
   );
