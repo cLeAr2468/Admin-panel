@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link, useParams } from 'react-router-dom';
 import { fetchApi } from "@/lib/api";
+import { AuthContext } from "@/context/AuthContext";
+import { DEFAULT_SHOP, verifySlug } from "@/lib/shop";
 
 const DEFAULT_SHOP_NAME = 'Wise Wash Intelligence';
 
@@ -9,6 +11,20 @@ const Home = () => {
     const { slug } = useParams();
     const [servicesData, setServicesData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [selectedShop, setSelectedShop] = useState(null);
+    const { adminData, token } = useContext(AuthContext);
+
+    useEffect(() => {
+        const load = async () => {
+            const shop = await verifySlug(slug);
+            setSelectedShop(shop);
+        };
+        load();
+    }, [slug]);
+
+    const isLoggedIn = (adminData && token);
+
+    const currentShop = selectedShop || DEFAULT_SHOP;
 
     const shopName = slug ? slug : DEFAULT_SHOP_NAME;
 
@@ -81,11 +97,13 @@ const Home = () => {
                         <p className="text-xl text-gray-700 mb-8">
                             Professional Laundry & Dry Cleaning Services
                         </p>
-                        <Link to="/dashboard">
-                            <Button className="bg-[#126280] text-white px-8 py-6 text-lg hover:bg-[#126280]/90">
-                                Go to Dashboard
-                            </Button>
-                        </Link>
+                        {isLoggedIn ? (
+                            <Link to={currentShop ? `/${currentShop.slug}/dashboard` : '/dashboard'}>
+                                <Button className="bg-[#126280] text-white px-8 py-6 text-lg hover:bg-[#126280]/90">
+                                    Go to Dashboard
+                                </Button>
+                            </Link>
+                        ) : null}
                     </div>
 
                     {/* Services Section */}
